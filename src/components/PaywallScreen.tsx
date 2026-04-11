@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors } from '../constants/colors';
 // TODO: trigger StoreKit purchase via react-native-purchases (RevenueCat) or expo-in-app-purchases
 
 export type PlanId = 'pro_annual' | 'pro_monthly' | 'elite_annual' | 'elite_monthly';
@@ -76,9 +78,9 @@ export default function PaywallScreen({ onClose, onSelectPlan, onRestorePurchase
         {/* Feature table */}
         <View style={styles.table}>
           <View style={styles.tableHeader}>
-            <Text style={[styles.th]}>Free</Text>
-            <Text style={[styles.th, { color: '#F5C842' }]}>Pro</Text>
-            <Text style={[styles.th, { color: '#F0F0F0' }]}>Elite</Text>
+            <Text style={styles.th}>Free</Text>
+            <Text style={[styles.th, { color: colors.gold }]}>Pro</Text>
+            <Text style={[styles.th, { color: colors.textPrimary }]}>Elite</Text>
           </View>
           {FEATURES.map((row, i) => (
             <View key={i} style={[styles.tableRow, i % 2 === 0 && styles.tableRowAlt]}>
@@ -100,7 +102,7 @@ export default function PaywallScreen({ onClose, onSelectPlan, onRestorePurchase
               activeOpacity={0.8}
             >
               <View style={styles.planLeft}>
-                <Text style={[styles.planName, selectedPlan !== plan.id && { color: '#888888' }]}>
+                <Text style={[styles.planName, selectedPlan !== plan.id && { color: colors.textSecondary }]}>
                   {plan.name}
                 </Text>
                 <Text style={styles.planPrice}>
@@ -118,7 +120,7 @@ export default function PaywallScreen({ onClose, onSelectPlan, onRestorePurchase
                   ]}>
                     <Text style={[
                       styles.saveBadgeText,
-                      selectedPlan !== plan.id && { color: '#555555' },
+                      selectedPlan !== plan.id && { color: colors.textMuted },
                     ]}>
                       {plan.saveBadge}
                     </Text>
@@ -155,93 +157,93 @@ export default function PaywallScreen({ onClose, onSelectPlan, onRestorePurchase
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1C1C1E' },
+  container: { flex: 1, backgroundColor: colors.bg },
   scrollContent: { paddingBottom: 40 },
   topBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingTop: 20,
   },
   closeBtn: {
-    width: 32, height: 32, borderRadius: 999,
-    backgroundColor: '#2A2A2A', borderWidth: 1, borderColor: '#363636',
+    width: 44, height: 44, borderRadius: 999,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
     alignItems: 'center', justifyContent: 'center',
   },
-  closeBtnText: { fontSize: 14, color: '#555555' },
-  restoreText: { fontSize: 13, fontWeight: '500', color: '#444444' },
+  closeBtnText: { fontSize: 14, color: colors.textMuted },
+  restoreText: { fontSize: 13, fontWeight: '500', color: colors.textDim },
   headline: {
-    fontSize: 26, fontWeight: '800', color: '#F0F0F0',
+    fontSize: 26, fontWeight: '800', color: colors.textPrimary,
     letterSpacing: -0.6, textAlign: 'center',
     paddingHorizontal: 20, paddingTop: 16, lineHeight: 32,
   },
-  headlineAccent: { color: '#F5C842' },
-  sub: { fontSize: 14, color: '#555555', textAlign: 'center', paddingHorizontal: 32, marginTop: 8, marginBottom: 16, lineHeight: 20 },
+  headlineAccent: { color: colors.gold },
+  sub: { fontSize: 14, color: colors.textMuted, textAlign: 'center', paddingHorizontal: 32, marginTop: 8, marginBottom: 16, lineHeight: 20 },
   table: {
-    marginHorizontal: 16, borderWidth: 1, borderColor: '#2E2E2E',
+    marginHorizontal: 16, borderWidth: 1, borderColor: colors.borderSubtle,
     borderRadius: 14, overflow: 'hidden',
   },
   tableHeader: {
-    flexDirection: 'row', backgroundColor: '#242424',
-    borderBottomWidth: 1, borderBottomColor: '#2E2E2E',
+    flexDirection: 'row', backgroundColor: colors.surfaceAlt,
+    borderBottomWidth: 1, borderBottomColor: colors.borderSubtle,
     paddingVertical: 10,
     paddingLeft: '33%' as any,
   },
   th: {
     flex: 1, textAlign: 'center', fontSize: 12, fontWeight: '700',
-    color: '#888888', textTransform: 'uppercase', letterSpacing: 0.5,
+    color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5,
   },
   tableRow: {
     flexDirection: 'row', alignItems: 'center',
-    borderBottomWidth: 1, borderBottomColor: '#222222',
+    borderBottomWidth: 1, borderBottomColor: colors.surfaceDim,
   },
-  tableRowAlt: { backgroundColor: '#1E1E1E' },
+  tableRowAlt: { backgroundColor: colors.surfaceElevated },
   tdLabel: {
     width: '33%', paddingLeft: 12, paddingVertical: 9,
-    fontSize: 12, color: '#888888', fontWeight: '500',
+    fontSize: 12, color: colors.textSecondary, fontWeight: '500',
   },
   tdCell: { flex: 1, alignItems: 'center' },
-  check: { fontSize: 14, fontWeight: '700', color: '#30A46C' },
-  cross: { fontSize: 14, color: '#333333' },
-  val: { fontSize: 12, fontWeight: '600', color: '#F0F0F0' },
-  valGold: { fontSize: 12, fontWeight: '700', color: '#F5C842' },
+  check: { fontSize: 14, fontWeight: '700', color: colors.success },
+  cross: { fontSize: 14, color: colors.borderMuted },
+  val: { fontSize: 12, fontWeight: '600', color: colors.textPrimary },
+  valGold: { fontSize: 12, fontWeight: '700', color: colors.gold },
   planList: { marginTop: 14, marginHorizontal: 16, gap: 8 },
   planOption: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     borderRadius: 12, padding: 12, paddingHorizontal: 16,
-    backgroundColor: '#242424', borderWidth: 1, borderColor: '#333333',
+    backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.borderMuted,
   },
   planOptionSelected: {
-    backgroundColor: 'rgba(245,200,66,0.08)', borderColor: '#F5C842', borderWidth: 1.5,
+    backgroundColor: colors.goldDim, borderColor: colors.gold, borderWidth: 1.5,
   },
   planLeft: { gap: 2 },
-  planName: { fontSize: 15, fontWeight: '700', color: '#F0F0F0' },
-  planPrice: { fontSize: 13, color: '#555555' },
-  planPriceMonth: { fontWeight: '600', color: '#888888' },
+  planName: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  planPrice: { fontSize: 13, color: colors.textMuted },
+  planPriceMonth: { fontWeight: '600', color: colors.textSecondary },
   planRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   saveBadge: {
-    backgroundColor: '#F5C842', borderRadius: 999,
+    backgroundColor: colors.gold, borderRadius: 999,
     paddingHorizontal: 9, paddingVertical: 3,
   },
   saveBadgeMuted: {
-    backgroundColor: '#2A2A2A', borderWidth: 1, borderColor: '#363636',
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
   },
-  saveBadgeText: { fontSize: 11, fontWeight: '800', color: '#000000' },
+  saveBadgeText: { fontSize: 11, fontWeight: '800', color: colors.textOnGold },
   radio: {
     width: 18, height: 18, borderRadius: 999,
-    borderWidth: 2, borderColor: '#F5C842',
+    borderWidth: 2, borderColor: colors.gold,
     alignItems: 'center', justifyContent: 'center',
   },
-  radioEmpty: { borderColor: '#3A3A3A' },
+  radioEmpty: { borderColor: colors.borderStrong },
   radioFill: {
-    width: 9, height: 9, borderRadius: 999, backgroundColor: '#F5C842',
+    width: 9, height: 9, borderRadius: 999, backgroundColor: colors.gold,
   },
   trialBtn: {
     marginHorizontal: 20, marginTop: 12, height: 54,
-    backgroundColor: '#F5C842', borderRadius: 999,
+    backgroundColor: colors.gold, borderRadius: 999,
     alignItems: 'center', justifyContent: 'center',
   },
-  trialBtnText: { fontSize: 17, fontWeight: '700', color: '#000000', letterSpacing: -0.2 },
+  trialBtnText: { fontSize: 17, fontWeight: '700', color: colors.textOnGold, letterSpacing: -0.2 },
   terms: {
-    fontSize: 11, color: '#3A3A3A', textAlign: 'center',
+    fontSize: 11, color: colors.textMuted, textAlign: 'center',
     paddingHorizontal: 32, marginTop: 10, lineHeight: 16,
   },
 });

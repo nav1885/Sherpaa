@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors } from '../constants/colors';
 // TODO: import MapView for ride track rendering
 
 export interface SegmentResult {
@@ -63,7 +65,7 @@ export default function PostRideSummaryScreen({
       <ScrollView contentContainerStyle={styles.scrollContent}>
 
         {/* Map strip */}
-        {/* TODO: replace with MapView showing gpxTrack in #F5C842 and segment dots */}
+        {/* TODO: replace with MapView showing gpxTrack in colors.gold and segment dots */}
         <View style={styles.mapPlaceholder}>
           <View style={styles.mapNav}>
             <View>
@@ -130,7 +132,7 @@ export default function PostRideSummaryScreen({
             >
               <View style={styles.segCardTop}>
                 <Text style={styles.segName}>{seg.name}</Text>
-                <Text style={[styles.segTime, seg.isNewPR && { color: '#F5C842' }]}>
+                <Text style={[styles.segTime, seg.isNewPR && { color: colors.gold }]}>
                   {seg.wasSkipped ? '—' : formatTime(seg.timeSec)}
                 </Text>
               </View>
@@ -167,7 +169,7 @@ export default function PostRideSummaryScreen({
                       </View>
                       <Text style={[
                         styles.splitVal,
-                        { color: split.gapSeconds <= 0 ? '#30A46C' : '#E5484D' },
+                        { color: split.gapSeconds <= 0 ? colors.success : colors.error },
                       ]}>
                         {split.gapSeconds <= 0 ? `−${Math.abs(split.gapSeconds)}s` : `+${split.gapSeconds}s`}
                       </Text>
@@ -207,11 +209,11 @@ function formatTime(seconds: number): string {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1C1C1E' },
+  container: { flex: 1, backgroundColor: colors.bg },
   scrollContent: { paddingBottom: 40 },
   mapPlaceholder: {
     height: 200,
-    backgroundColor: '#1A2030',
+    backgroundColor: colors.mapBg,
     justifyContent: 'flex-end',
   },
   mapNav: {
@@ -222,99 +224,117 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
     // TODO: wrap in <LinearGradient> from expo-linear-gradient (Phase 6 polish)
   },
-  mapDate: { fontSize: 11, fontWeight: '600', color: '#555555', textTransform: 'uppercase', letterSpacing: 0.8 },
-  mapTitle: { fontSize: 17, fontWeight: '700', color: '#F0F0F0', letterSpacing: -0.3 },
+  mapDate: { fontSize: 11, fontWeight: '600', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.8 },
+  mapTitle: { fontSize: 17, fontWeight: '700', color: colors.textPrimary, letterSpacing: -0.3 },
   shareBtn: {
-    width: 36, height: 36, borderRadius: 999,
-    backgroundColor: 'rgba(42,42,42,0.9)', borderWidth: 1, borderColor: '#3A3A3A',
+    width: 44, height: 44, borderRadius: 999,
+    backgroundColor: 'rgba(42,42,42,0.9)', borderWidth: 1, borderColor: colors.borderStrong,
     alignItems: 'center', justifyContent: 'center',
   },
-  shareBtnText: { fontSize: 16, color: '#F0F0F0' },
+  shareBtnText: { fontSize: 16, color: colors.textPrimary },
   prHeadline: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     paddingHorizontal: 20, paddingTop: 16,
   },
   prCrownBadge: {
-    backgroundColor: '#F5C842', borderRadius: 999,
+    backgroundColor: colors.gold, borderRadius: 999,
     paddingHorizontal: 12, paddingVertical: 4,
   },
-  prCrownText: { fontSize: 12, fontWeight: '800', color: '#000000' },
-  prHeadlineSub: { fontSize: 14, color: '#888888', fontWeight: '500' },
+  prCrownText: { fontSize: 12, fontWeight: '800', color: colors.textOnGold },
+  prHeadlineSub: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
   statsGrid: {
     flexDirection: 'row', flexWrap: 'wrap', gap: 10,
     paddingHorizontal: 20, paddingTop: 14,
   },
   statCard: {
     width: '30%', flexGrow: 1,
-    backgroundColor: '#2A2A2A', borderWidth: 1, borderColor: '#363636',
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
     borderRadius: 12, padding: 12,
   },
-  statVal: { fontSize: 22, fontWeight: '700', color: '#F0F0F0', letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
-  statLabel: { fontSize: 10, fontWeight: '600', color: '#444444', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 3 },
+  statVal: {
+    fontSize: 22, fontWeight: '700', color: colors.textPrimary, letterSpacing: -0.5,
+    ...Platform.select({
+      ios: { fontVariant: ['tabular-nums'] as const },
+      android: { fontFamily: 'monospace' },
+    }),
+  },
+  statLabel: { fontSize: 11, fontWeight: '600', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 3 },
   syncBanner: {
     marginHorizontal: 20, marginTop: 12,
-    backgroundColor: 'rgba(48,164,108,0.08)', borderWidth: 1, borderColor: 'rgba(48,164,108,0.2)',
+    backgroundColor: colors.successDim, borderWidth: 1, borderColor: colors.successBorder,
     borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
   },
   syncBannerPending: {
-    backgroundColor: 'rgba(245,200,66,0.06)', borderColor: 'rgba(245,200,66,0.2)',
+    backgroundColor: colors.goldDim, borderColor: colors.goldBorder,
   },
-  syncText: { fontSize: 13, fontWeight: '500', color: '#30A46C' },
-  syncTextPending: { color: '#F5C842' },
+  syncText: { fontSize: 13, fontWeight: '500', color: colors.success },
+  syncTextPending: { color: colors.gold },
   sectionLabel: {
-    fontSize: 11, fontWeight: '600', color: '#444444',
+    fontSize: 11, fontWeight: '600', color: colors.textDim,
     textTransform: 'uppercase', letterSpacing: 1.2,
     paddingHorizontal: 20, paddingTop: 18, paddingBottom: 10,
   },
   segCard: {
     marginHorizontal: 20, marginBottom: 8,
-    backgroundColor: '#2A2A2A', borderWidth: 1, borderColor: '#363636',
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
     borderRadius: 12, padding: 14,
   },
   segCardPR: {
-    borderColor: 'rgba(245,200,66,0.3)',
-    backgroundColor: 'rgba(245,200,66,0.05)',
+    borderColor: colors.goldBorderStrong,
+    backgroundColor: colors.goldDim,
   },
   segCardTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  segName: { fontSize: 15, fontWeight: '700', color: '#F0F0F0' },
-  segTime: { fontSize: 15, fontWeight: '700', color: '#F0F0F0', fontVariant: ['tabular-nums'] },
+  segName: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  segTime: {
+    fontSize: 15, fontWeight: '700', color: colors.textPrimary,
+    ...Platform.select({
+      ios: { fontVariant: ['tabular-nums'] as const },
+      android: { fontFamily: 'monospace' },
+    }),
+  },
   segCardBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  segNote: { fontSize: 12, color: '#555555' },
+  segNote: { fontSize: 12, color: colors.textMuted },
   prTag: {
-    backgroundColor: 'rgba(245,200,66,0.1)', borderWidth: 1, borderColor: 'rgba(245,200,66,0.2)',
+    backgroundColor: colors.goldDim, borderWidth: 1, borderColor: colors.goldBorder,
     borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2,
   },
-  prTagText: { fontSize: 11, fontWeight: '700', color: '#F5C842' },
+  prTagText: { fontSize: 11, fontWeight: '700', color: colors.gold },
   offTag: {
-    backgroundColor: '#242424', borderWidth: 1, borderColor: '#333333',
+    backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.borderMuted,
     borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2,
   },
-  offTagText: { fontSize: 11, fontWeight: '600', color: '#555555' },
+  offTagText: { fontSize: 11, fontWeight: '600', color: colors.textMuted },
   splitsArea: {
-    marginTop: 14, borderTopWidth: 1, borderTopColor: '#333333', paddingTop: 14,
+    marginTop: 14, borderTopWidth: 1, borderTopColor: colors.borderMuted, paddingTop: 14,
   },
-  splitsTitle: { fontSize: 11, fontWeight: '600', color: '#444444', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 },
+  splitsTitle: { fontSize: 11, fontWeight: '600', color: colors.textDim, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 },
   splitRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 10 },
-  splitLabel: { fontSize: 12, fontWeight: '500', color: '#555555', width: 36 },
-  splitTrack: { flex: 1, height: 6, backgroundColor: '#222222', borderRadius: 999, position: 'relative' },
-  splitBarPR: { position: 'absolute', top: 0, left: 0, height: 6, width: '70%', backgroundColor: '#444444', borderRadius: 999 },
-  splitBarToday: { position: 'absolute', top: 0, left: 0, height: 6, backgroundColor: '#F5C842', borderRadius: 999, opacity: 0.9 },
-  splitVal: { fontSize: 12, fontWeight: '700', width: 36, textAlign: 'right', fontVariant: ['tabular-nums'] },
-  cueReview: {
-    marginTop: 12, backgroundColor: 'rgba(245,200,66,0.06)',
-    borderWidth: 1, borderColor: 'rgba(245,200,66,0.15)', borderRadius: 8, padding: 10,
+  splitLabel: { fontSize: 12, fontWeight: '500', color: colors.textMuted, width: 36 },
+  splitTrack: { flex: 1, height: 6, backgroundColor: colors.surfaceDim, borderRadius: 999, position: 'relative' },
+  splitBarPR: { position: 'absolute', top: 0, left: 0, height: 6, width: '70%', backgroundColor: colors.textDim, borderRadius: 999 },
+  splitBarToday: { position: 'absolute', top: 0, left: 0, height: 6, backgroundColor: colors.gold, borderRadius: 999, opacity: 0.9 },
+  splitVal: {
+    fontSize: 12, fontWeight: '700', width: 36, textAlign: 'right',
+    ...Platform.select({
+      ios: { fontVariant: ['tabular-nums'] as const },
+      android: { fontFamily: 'monospace' },
+    }),
   },
-  cueReviewLabel: { fontSize: 10, fontWeight: '600', color: '#F5C842', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 },
+  cueReview: {
+    marginTop: 12, backgroundColor: colors.goldDim,
+    borderWidth: 1, borderColor: colors.goldBorder, borderRadius: 8, padding: 10,
+  },
+  cueReviewLabel: { fontSize: 11, fontWeight: '600', color: colors.gold, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 },
   cueReviewText: { fontSize: 12, color: 'rgba(240,240,240,0.6)', fontStyle: 'italic', lineHeight: 18 },
   listenBtn: {
-    marginHorizontal: 20, marginTop: 12, height: 44,
-    backgroundColor: '#2A2A2A', borderWidth: 1, borderColor: '#363636',
+    marginHorizontal: 20, marginTop: 12, height: 48,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
     borderRadius: 999, alignItems: 'center', justifyContent: 'center',
   },
-  listenBtnText: { fontSize: 14, fontWeight: '600', color: '#F5C842' },
+  listenBtnText: { fontSize: 14, fontWeight: '600', color: colors.gold },
   doneBtn: {
     marginHorizontal: 20, marginTop: 10, height: 54,
-    backgroundColor: '#F5C842', borderRadius: 999, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.gold, borderRadius: 999, alignItems: 'center', justifyContent: 'center',
   },
-  doneBtnText: { fontSize: 17, fontWeight: '600', color: '#000000' },
+  doneBtnText: { fontSize: 17, fontWeight: '600', color: colors.textOnGold },
 });

@@ -1,5 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors } from '../constants/colors';
 import { GoalMode } from './RouteSetupScreen';
 
 interface BriefSegment {
@@ -142,83 +144,89 @@ function formatTime(seconds: number): string {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1C1C1E' },
+  container: { flex: 1, backgroundColor: colors.bg },
   scrollContent: { paddingBottom: 120 },
   navBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingTop: 16,
   },
   backBtn: {
-    width: 36, height: 36, borderRadius: 999,
-    backgroundColor: '#2A2A2A', borderWidth: 1, borderColor: '#3A3A3A',
+    width: 44, height: 44, borderRadius: 999,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderStrong,
     alignItems: 'center', justifyContent: 'center',
   },
-  backBtnText: { fontSize: 16, color: '#F0F0F0' },
-  navTitle: { fontSize: 17, fontWeight: '700', color: '#F0F0F0', letterSpacing: -0.3 },
-  editText: { fontSize: 15, fontWeight: '500', color: '#F5C842' },
+  backBtnText: { fontSize: 16, color: colors.textPrimary },
+  navTitle: { fontSize: 17, fontWeight: '700', color: colors.textPrimary, letterSpacing: -0.3 },
+  editText: { fontSize: 15, fontWeight: '500', color: colors.gold },
   summaryCard: {
     marginHorizontal: 20, marginTop: 20,
-    backgroundColor: '#2A2A2A', borderWidth: 1, borderColor: '#363636', borderRadius: 16, padding: 20,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 20,
   },
   goalRow: {
     flexDirection: 'row', alignItems: 'center', marginBottom: 16,
   },
   goalBadge: {
-    backgroundColor: '#F5C842', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4,
+    backgroundColor: colors.gold, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4,
   },
-  goalBadgeText: { fontSize: 12, fontWeight: '700', color: '#000000', textTransform: 'uppercase', letterSpacing: 0.5 },
+  goalBadgeText: { fontSize: 12, fontWeight: '700', color: colors.textOnGold, textTransform: 'uppercase', letterSpacing: 0.5 },
   audioIndicator: {
     marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 6,
   },
-  audioDot: { width: 6, height: 6, borderRadius: 999, backgroundColor: '#F5C842' },
-  audioText: { fontSize: 12, fontWeight: '500', color: '#F5C842' },
+  audioDot: { width: 6, height: 6, borderRadius: 999, backgroundColor: colors.gold },
+  audioText: { fontSize: 12, fontWeight: '500', color: colors.gold },
   statsRow: { flexDirection: 'row' },
   stat: { flex: 1, gap: 3 },
-  statVal: { fontSize: 22, fontWeight: '700', color: '#F0F0F0', letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
-  statLabel: { fontSize: 11, fontWeight: '500', color: '#555555', textTransform: 'uppercase', letterSpacing: 0.5 },
-  statDivider: { width: 1, backgroundColor: '#3A3A3A', marginHorizontal: 16 },
+  statVal: {
+    fontSize: 22, fontWeight: '700', color: colors.textPrimary, letterSpacing: -0.5,
+    ...Platform.select({
+      ios: { fontVariant: ['tabular-nums'] as const },
+      android: { fontFamily: 'monospace' },
+    }),
+  },
+  statLabel: { fontSize: 11, fontWeight: '500', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  statDivider: { width: 1, backgroundColor: colors.borderStrong, marginHorizontal: 16 },
   briefBanner: {
     marginHorizontal: 20, marginTop: 12,
-    backgroundColor: 'rgba(245,200,66,0.08)', borderWidth: 1, borderColor: 'rgba(245,200,66,0.2)',
+    backgroundColor: colors.goldDim, borderWidth: 1, borderColor: colors.goldBorder,
     borderRadius: 12, padding: 14, flexDirection: 'row', alignItems: 'flex-start', gap: 12,
   },
   briefWave: { flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 20, flexShrink: 0, marginTop: 2 },
-  briefBar: { width: 3, backgroundColor: '#F5C842', borderRadius: 2 },
+  briefBar: { width: 3, backgroundColor: colors.gold, borderRadius: 2 },
   briefText: { fontSize: 13, color: 'rgba(240,240,240,0.75)', lineHeight: 19, fontStyle: 'italic', flex: 1 },
   sectionLabel: {
-    fontSize: 11, fontWeight: '600', color: '#444444',
+    fontSize: 11, fontWeight: '600', color: colors.textDim,
     textTransform: 'uppercase', letterSpacing: 1.2,
     paddingHorizontal: 20, paddingTop: 20, paddingBottom: 10,
   },
   segItem: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     marginHorizontal: 20, marginBottom: 8,
-    backgroundColor: '#2A2A2A', borderWidth: 1, borderColor: '#363636',
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
     borderRadius: 12, padding: 12,
   },
   segNum: {
-    width: 24, height: 24, borderRadius: 999, backgroundColor: '#363636',
+    width: 24, height: 24, borderRadius: 999, backgroundColor: colors.border,
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
-  segNumText: { fontSize: 12, fontWeight: '700', color: '#888888' },
+  segNumText: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
   segInfo: { flex: 1 },
-  segName: { fontSize: 14, fontWeight: '600', color: '#F0F0F0' },
-  segMeta: { fontSize: 12, color: '#555555', marginTop: 2 },
+  segName: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
+  segMeta: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   prTag: {
-    backgroundColor: 'rgba(245,200,66,0.1)', borderWidth: 1, borderColor: 'rgba(245,200,66,0.2)',
+    backgroundColor: colors.goldDim, borderWidth: 1, borderColor: colors.goldBorder,
     borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2,
   },
-  prTagText: { fontSize: 11, fontWeight: '600', color: '#F5C842' },
+  prTagText: { fontSize: 11, fontWeight: '600', color: colors.gold },
   footer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     paddingHorizontal: 20, paddingBottom: 40, paddingTop: 16,
-    backgroundColor: '#1C1C1E', borderTopWidth: 1, borderTopColor: '#2A2A2A',
+    backgroundColor: colors.bg, borderTopWidth: 1, borderTopColor: colors.surface,
     gap: 14, alignItems: 'center',
   },
   startBtn: {
-    width: '100%', height: 58, backgroundColor: '#F5C842', borderRadius: 999,
+    width: '100%', height: 58, backgroundColor: colors.gold, borderRadius: 999,
     alignItems: 'center', justifyContent: 'center',
   },
-  startBtnText: { fontSize: 18, fontWeight: '700', color: '#000000', letterSpacing: -0.3 },
-  changeGoalText: { fontSize: 15, fontWeight: '500', color: 'rgba(240,240,240,0.4)' },
+  startBtnText: { fontSize: 18, fontWeight: '700', color: colors.textOnGold, letterSpacing: -0.3 },
+  changeGoalText: { fontSize: 15, fontWeight: '500', color: colors.textFaint },
 });

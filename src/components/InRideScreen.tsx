@@ -1,5 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors } from '../constants/colors';
 // TODO: implement 2-second hold with LongPressGestureHandler from react-native-gesture-handler
 
 interface NextSegment {
@@ -31,20 +33,20 @@ export default function InRideScreen({
   onEndRide,
 }: Props) {
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
 
       {/* Status bar row */}
       <View style={styles.statusBar}>
         <Text style={styles.elapsed}>{elapsedTime}</Text>
         <View style={styles.statusPills}>
           <View style={styles.pill}>
-            <View style={[styles.pillDot, { backgroundColor: gpsLocked ? '#30A46C' : '#E5484D' }]} />
-            <Text style={[styles.pillText, { color: gpsLocked ? '#30A46C' : '#E5484D' }]}>GPS</Text>
+            <View style={[styles.pillDot, { backgroundColor: gpsLocked ? colors.success : colors.error }]} />
+            <Text style={[styles.pillText, { color: gpsLocked ? colors.success : colors.error }]}>GPS</Text>
           </View>
           {audioActive && (
             <View style={styles.pill}>
               <Text style={styles.pillAudio}>♪</Text>
-              <Text style={[styles.pillText, { color: '#888888' }]}>On</Text>
+              <Text style={[styles.pillText, { color: colors.textSecondary }]}>On</Text>
             </View>
           )}
         </View>
@@ -106,15 +108,14 @@ export default function InRideScreen({
         <Text style={styles.endRideText}>■  End Ride</Text>
       </TouchableOpacity>
 
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111111',
-    paddingTop: 54, // status bar height
+    backgroundColor: colors.bgDeep,
   },
   statusBar: {
     flexDirection: 'row',
@@ -126,8 +127,11 @@ const styles = StyleSheet.create({
   elapsed: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#F0F0F0',
-    fontVariant: ['tabular-nums'],
+    color: colors.textPrimary,
+    ...Platform.select({
+      ios: { fontVariant: ['tabular-nums'] as const },
+      android: { fontFamily: 'monospace' },
+    }),
   },
   statusPills: {
     flexDirection: 'row',
@@ -137,9 +141,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#1E1E1E',
+    backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
-    borderColor: '#2A2A2A',
+    borderColor: colors.surface,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -155,14 +159,14 @@ const styles = StyleSheet.create({
   },
   pillAudio: {
     fontSize: 11,
-    color: '#F5C842',
+    color: colors.gold,
   },
   nextSegPill: {
     marginHorizontal: 20,
     marginBottom: 8,
-    backgroundColor: 'rgba(245,200,66,0.08)',
+    backgroundColor: colors.goldDim,
     borderWidth: 1,
-    borderColor: 'rgba(245,200,66,0.2)',
+    borderColor: colors.goldBorder,
     borderRadius: 12,
     padding: 10,
     paddingHorizontal: 16,
@@ -173,7 +177,7 @@ const styles = StyleSheet.create({
   nextSegLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#F5C842',
+    color: colors.gold,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginBottom: 2,
@@ -181,20 +185,23 @@ const styles = StyleSheet.create({
   nextSegName: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#F0F0F0',
+    color: colors.textPrimary,
   },
   nextSegDistWrap: { alignItems: 'flex-end' },
   nextSegDist: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#F5C842',
+    color: colors.gold,
     letterSpacing: -0.5,
-    fontVariant: ['tabular-nums'],
+    ...Platform.select({
+      ios: { fontVariant: ['tabular-nums'] as const },
+      android: { fontFamily: 'monospace' },
+    }),
   },
   nextSegDistLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '500',
-    color: '#555555',
+    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -207,15 +214,18 @@ const styles = StyleSheet.create({
   speed: {
     fontSize: 112,
     fontWeight: '800',
-    color: '#F0F0F0',
+    color: colors.textPrimary,
     letterSpacing: -6,
     lineHeight: 112,
-    fontVariant: ['tabular-nums'],
+    ...Platform.select({
+      ios: { fontVariant: ['tabular-nums'] as const },
+      android: { fontFamily: 'monospace' },
+    }),
   },
   speedUnit: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#555555',
+    color: colors.textMuted,
     letterSpacing: 1,
     textTransform: 'uppercase',
     marginTop: 4,
@@ -234,36 +244,42 @@ const styles = StyleSheet.create({
   metricVal: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#F0F0F0',
+    color: colors.textPrimary,
     letterSpacing: -0.5,
-    fontVariant: ['tabular-nums'],
+    ...Platform.select({
+      ios: { fontVariant: ['tabular-nums'] as const },
+      android: { fontFamily: 'monospace' },
+    }),
   },
   metricLabel: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#444444',
+    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
   metricDivider: {
     width: 1,
     height: 36,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: colors.surface,
   },
   endRideBtn: {
     position: 'absolute',
-    bottom: 36,
+    bottom: 40,
     alignSelf: 'center',
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#2A2A2A',
+    borderColor: colors.border,
     borderRadius: 999,
     paddingHorizontal: 28,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   endRideText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#444444',
+    color: colors.textMuted,
   },
 });

@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { colors } from '../constants/colors';
 // TODO: animate sheet in with Reanimated spring (translateY from screenHeight to 0)
 
 interface Props {
@@ -43,7 +44,7 @@ export default function SegmentActiveOverlay({
         </View>
         <View style={styles.progressLabels}>
           <Text style={styles.progressLabel}>Start</Text>
-          <Text style={[styles.progressLabel, { color: '#F5C842' }]}>{Math.round(progressPercent)}%</Text>
+          <Text style={[styles.progressLabel, { color: colors.gold }]}>{Math.round(progressPercent)}%</Text>
           <Text style={styles.progressLabel}>Finish</Text>
         </View>
 
@@ -56,7 +57,7 @@ export default function SegmentActiveOverlay({
         {/* Metric cards */}
         <View style={styles.gapRow}>
           <View style={styles.gapCard}>
-            <Text style={[styles.gapVal, { color: gapAhead ? '#30A46C' : '#E5484D' }]}>
+            <Text style={[styles.gapVal, { color: gapAhead ? colors.success : colors.error }]}>
               {gapDisplay}
             </Text>
             <Text style={styles.gapLabel}>vs PR pace</Text>
@@ -93,18 +94,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sheet: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: colors.bgOverlay,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
-    borderTopColor: '#2E2E2E',
+    borderTopColor: colors.borderSubtle,
     paddingHorizontal: 24,
     paddingBottom: 48,
   },
   handle: {
     width: 36,
     height: 4,
-    backgroundColor: '#3A3A3A',
+    backgroundColor: colors.borderStrong,
     borderRadius: 999,
     alignSelf: 'center',
     marginTop: 12,
@@ -113,20 +114,20 @@ const styles = StyleSheet.create({
   segmentName: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#F0F0F0',
+    color: colors.textPrimary,
     letterSpacing: -0.4,
     marginBottom: 20,
   },
   progressTrack: {
     height: 4,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: colors.surface,
     borderRadius: 999,
     marginBottom: 8,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#F5C842',
+    backgroundColor: colors.gold,
     borderRadius: 999,
   },
   progressLabels: {
@@ -137,7 +138,7 @@ const styles = StyleSheet.create({
   progressLabel: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#444444',
+    color: colors.textDim,
   },
   elapsedWrap: {
     alignItems: 'center',
@@ -146,15 +147,18 @@ const styles = StyleSheet.create({
   elapsedVal: {
     fontSize: 64,
     fontWeight: '800',
-    color: '#F0F0F0',
+    color: colors.textPrimary,
     letterSpacing: -3,
     lineHeight: 64,
-    fontVariant: ['tabular-nums'],
+    ...Platform.select({
+      ios: { fontVariant: ['tabular-nums'] as const },
+      android: { fontFamily: 'monospace' },
+    }),
   },
   elapsedLabel: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#444444',
+    color: colors.textDim,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginTop: 4,
@@ -165,9 +169,9 @@ const styles = StyleSheet.create({
   },
   gapCard: {
     flex: 1,
-    backgroundColor: '#222222',
+    backgroundColor: colors.surfaceDim,
     borderWidth: 1,
-    borderColor: '#2E2E2E',
+    borderColor: colors.borderSubtle,
     borderRadius: 12,
     padding: 14,
     alignItems: 'center',
@@ -175,14 +179,17 @@ const styles = StyleSheet.create({
   gapVal: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#F0F0F0',
+    color: colors.textPrimary,
     letterSpacing: -0.5,
-    fontVariant: ['tabular-nums'],
+    ...Platform.select({
+      ios: { fontVariant: ['tabular-nums'] as const },
+      android: { fontFamily: 'monospace' },
+    }),
   },
   gapLabel: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#444444',
+    color: colors.textDim,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginTop: 4,

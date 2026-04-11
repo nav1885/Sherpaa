@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { colors } from '../constants/colors';
 // TODO: animate in with scale spring from Reanimated; auto-dismiss after 4s
 
 interface Props {
@@ -45,7 +46,7 @@ export default function SegmentResultScreen({
           <View style={styles.prBadge}>
             <Text style={styles.prBadgeText}>NEW PR</Text>
           </View>
-          <Text style={[styles.gap, { color: '#F5C842' }]}>{gapLabel}</Text>
+          <Text style={[styles.gap, { color: colors.gold }]}>{gapLabel}</Text>
         </>
       ) : (
         <>
@@ -70,7 +71,7 @@ function formatTime(seconds: number): string {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111111',
+    backgroundColor: colors.bgDeep,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -79,7 +80,7 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 999,
-    backgroundColor: 'rgba(245,200,66,0.12)',
+    backgroundColor: colors.goldGlow,
     // TODO: use radial gradient via expo-linear-gradient or react-native-svg
   },
   trophyIcon: {
@@ -88,13 +89,13 @@ const styles = StyleSheet.create({
   },
   checkIcon: {
     fontSize: 40,
-    color: '#888888',
+    color: colors.textSecondary,
     marginBottom: 16,
   },
   segmentName: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#555555',
+    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 12,
@@ -102,14 +103,17 @@ const styles = StyleSheet.create({
   time: {
     fontSize: 80,
     fontWeight: '800',
-    color: '#F0F0F0',
+    color: colors.textPrimary,
     letterSpacing: -4,
     lineHeight: 80,
-    fontVariant: ['tabular-nums'],
     marginBottom: 16,
+    ...Platform.select({
+      ios: { fontVariant: ['tabular-nums'] as const },
+      android: { fontFamily: 'monospace' },
+    }),
   },
   prBadge: {
-    backgroundColor: '#F5C842',
+    backgroundColor: colors.gold,
     borderRadius: 999,
     paddingHorizontal: 20,
     paddingVertical: 6,
@@ -118,13 +122,13 @@ const styles = StyleSheet.create({
   prBadgeText: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#000000',
+    color: colors.textOnGold,
     letterSpacing: 0.5,
   },
   neutralBadge: {
-    backgroundColor: '#2A2A2A',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#363636',
+    borderColor: colors.border,
     borderRadius: 999,
     paddingHorizontal: 20,
     paddingVertical: 6,
@@ -133,7 +137,7 @@ const styles = StyleSheet.create({
   neutralBadgeText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#888888',
+    color: colors.textSecondary,
   },
   gap: {
     fontSize: 16,
@@ -143,12 +147,12 @@ const styles = StyleSheet.create({
   prRef: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#555555',
+    color: colors.textMuted,
     marginBottom: 48,
   },
   dismissHint: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#3A3A3A',
+    color: colors.borderStrong,
   },
 });

@@ -1,6 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, ImageBackground, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ImageBackground, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { colors } from '../constants/colors';
 
 // TODO: replace with actual navigation prop type
 interface Props {
@@ -73,7 +75,7 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#F5C842',
+    color: colors.gold,
     letterSpacing: 4,
     textTransform: 'uppercase',
     marginBottom: 8,
@@ -87,8 +89,8 @@ const styles = StyleSheet.create({
   },
   btnGold: {
     width: '100%',
-    height: 52,
-    backgroundColor: '#F5C842',
+    height: 56,
+    backgroundColor: colors.gold,
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
@@ -97,12 +99,12 @@ const styles = StyleSheet.create({
   btnGoldText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.textOnGold,
   },
   btnGhost: {
     fontSize: 15,
     fontWeight: '500',
-    color: 'rgba(240,240,240,0.5)',
+    color: colors.textFaint,
     textAlign: 'center',
   },
 });

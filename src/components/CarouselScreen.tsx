@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors } from '../constants/colors';
 
 interface CarouselSlide {
   headline: string;
@@ -74,7 +76,7 @@ export default function CarouselScreen({ onComplete }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.bg,
   },
   skipBtn: {
     alignSelf: 'flex-end',
@@ -84,7 +86,7 @@ const styles = StyleSheet.create({
   skipText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#555555',
+    color: colors.textMuted,
   },
   illustration: {
     width: 260,
@@ -92,16 +94,16 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: 48,
     marginBottom: 32,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#363636',
+    borderColor: colors.border,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   illustrationPlaceholder: {
     fontSize: 13,
-    color: '#444444',
+    color: colors.textDim,
   },
   textBlock: {
     paddingHorizontal: 20,
@@ -111,7 +113,7 @@ const styles = StyleSheet.create({
   headline: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#F0F0F0',
+    color: colors.textPrimary,
     textAlign: 'center',
     letterSpacing: -0.5,
     lineHeight: 32,
@@ -119,7 +121,7 @@ const styles = StyleSheet.create({
   body: {
     fontSize: 15,
     fontWeight: '400',
-    color: '#666666',
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
   },
@@ -133,12 +135,12 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 999,
-    backgroundColor: '#444444',
+    backgroundColor: colors.textDim,
   },
   dotActive: {
     width: 8,
     height: 8,
-    backgroundColor: '#F5C842',
+    backgroundColor: colors.gold,
   },
   footer: {
     marginTop: 'auto',
@@ -148,8 +150,8 @@ const styles = StyleSheet.create({
   },
   btnGold: {
     width: '100%',
-    height: 52,
-    backgroundColor: '#F5C842',
+    height: 56,
+    backgroundColor: colors.gold,
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
@@ -157,6 +159,6 @@ const styles = StyleSheet.create({
   btnGoldText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.textOnGold,
   },
 });

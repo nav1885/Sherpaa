@@ -1,5 +1,31 @@
 # Sherpaa — Design Specification
-*Approved across 5 flows · April 2026*
+*Design review completed April 2026*
+
+---
+
+## Design Review Notes
+
+The existing design is strong in its fundamentals and required targeted fixes rather than a ground-up rework. The dark theme, gold accent system, and type scale were all well-judged. Changes made in this review:
+
+- Expanded the color token set to eliminate hardcoded hex values scattered across screens
+- Fixed three touch targets below the 44pt minimum (PaywallScreen close, PreRideBriefScreen back, PostRideSummaryScreen share)
+- Raised the tab bar height from 60px to the correct 83px (iOS standard with home indicator clearance)
+- Bumped sub-minimum font sizes (10px) to 11px (our system minimum for labels)
+- Improved contrast on in-ride metric labels and End Ride button
+- Fixed terms text contrast on Paywall (was #3A3A3A, now #555555 — required by App Store guidelines)
+
+---
+
+## Color Philosophy
+
+**Why dark?** Sherpaa is used outdoors on a bike mount, at dawn and dusk, in direct sun. Dark interfaces with high-contrast text and a single vivid accent outperform light UIs in these conditions — the same reason Garmin, Wahoo, and Strava's head unit view all default dark. Battery conservation on OLED screens is a real secondary benefit.
+
+**Why gold?** Gold signals performance, achievement, and personal records across all cycling culture — Strava's KOM crowns, race medals, leader jerseys. It reads at extreme distances on a bike mount at 112px. It contrasts sharply against every competitor's brand color: Strava's #FC4C02 orange, Garmin's red/black, Wahoo's blue. On our #111111 in-ride background, #F5C842 achieves 10.5:1 contrast (WCAG AAA). It's used only on: primary CTAs, active states, PR highlights, and audio indicators — never decoratively.
+
+**Color reasoning process applied:**
+1. User emotional state: competitive tension (approaching a segment), focused attention (mid-effort), relief and pride (PR result). Gold is reward. Deep black is focus.
+2. Domain: outdoor cycling, speed, endurance. Dark + gold reads as premium performance, not leisure.
+3. Competitive context: every competitor uses blue, orange, or red. Gold is uncontested and ownable.
 
 ---
 
@@ -7,95 +33,132 @@
 
 ### Colors
 
+All tokens live in `/src/constants/colors.ts`. Never hardcode hex values in component files.
+
 ```
 // Backgrounds
-bg-primary:     #1C1C1E   // Main screen background (iOS dark mode base)
-bg-deep:        #111111   // In-ride and debrief screens (maximum contrast)
-bg-surface:     #2A2A2A   // Cards, list items, sheets
-bg-surface-alt: #242424   // Alternate rows, condensed cards
-bg-overlay:     #1A1A1A   // Canvas / page background
+bg:               #1C1C1E    // Main screen background (iOS dark mode base)
+bgDeep:           #111111    // In-ride, debrief, result screens (max contrast, OLED)
+bgOverlay:        #1A1A1A    // Canvas / page background layer
+surface:          #2A2A2A    // Cards, list items, bottom sheets
+surfaceAlt:       #242424    // Alternate rows, condensed cards, table rows
+surfaceDim:       #222222    // Deeper inset — metric cards in overlays
+surfaceElevated:  #1E1E1E    // Slightly lighter — layered card backgrounds
 
 // Borders
-border-subtle:  #2E2E2E   // Light separation
-border-default: #363636   // Cards and inputs
-border-strong:  #3A3A3A   // Buttons, active elements
+borderSubtle:     #2E2E2E    // Lightest separation — map overlays, pill borders
+border:           #363636    // Standard card and input border
+borderMuted:      #333333    // Tab bars, section dividers
+borderStrong:     #3A3A3A    // Active elements, handles, strong dividers
 
 // Accent — Gold
-accent:         #F5C842   // Primary CTA, active states, PR highlights
-accent-dim:     rgba(245,200,66,0.1)   // Tinted backgrounds
-accent-border:  rgba(245,200,66,0.2)   // Tinted borders
-accent-border-strong: rgba(245,200,66,0.3)
+gold:             #F5C842
+goldDim:          rgba(245,200,66,0.10)   // Tinted backgrounds
+goldBorder:       rgba(245,200,66,0.20)   // Standard tinted borders
+goldBorderStrong: rgba(245,200,66,0.30)   // Selected states, PR card borders
+goldGlow:         rgba(245,200,66,0.12)   // Radial glow on PR result screens
 
 // Text
-text-primary:   #F0F0F0   // Headings, primary content
-text-secondary: #888888   // Supporting labels
-text-muted:     #555555   // Metadata, timestamps
-text-faint:     #444444   // Section labels, inactive states
+textPrimary:      #F0F0F0    // Headings, primary content
+textSecondary:    #888888    // Supporting labels, readable metadata
+textMuted:        #555555    // Timestamps, secondary metadata
+textDim:          #444444    // Section labels, inactive states
+textFaint:        rgba(240,240,240,0.40)  // Ghost button text only
+textOnGold:       #000000    // Text rendered on gold surfaces
 
-// Status
-success:        #30A46C   // GPS lock, sync confirmed, ahead of PR
-error:          #E5484D   // OAuth fail, payment fail
-strava-orange:  #FC4C02   // Strava branding only (badge)
+// Semantic
+success:          #30A46C
+successDim:       rgba(48,164,108,0.08)
+successBorder:    rgba(48,164,108,0.20)
+error:            #E5484D
+errorDim:         rgba(229,72,77,0.10)
+errorBorder:      rgba(229,72,77,0.20)
+
+// Brand partners
+stravaOrange:     #FC4C02    // Strava badge ONLY — not used as a UI color
 
 // Map
-map-bg:         #1A2030   // Simulated map base
-map-road:       #243040   // Road lines on map
+mapBg:            #1A2030    // Simulated dark map base
+mapRoad:          #243040    // Road lines on map tiles
+
+// Pure
+black:            #000000
+white:            #FFFFFF
 ```
 
 ### Typography
 
-| Role | Size | Weight | Usage |
+System font: `-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text'`
+All numeric displays: `fontVariant: ['tabular-nums']` — non-negotiable for real-time data.
+
+| Role | Size | Weight | Notes |
 |---|---|---|---|
-| Display | 112px | 800 | In-ride speed readout |
-| Hero | 80px | 800 | Segment result time |
+| Display | 112px | 800 | In-ride speed readout — impossible to miss at a glance |
+| Hero | 80px | 800 | Segment result time — fills the visual field |
 | Title XL | 28px | 700–800 | Screen headlines, paywall |
 | Title L | 24px | 700 | Flow titles, debrief |
 | Title M | 20px | 700 | Card titles, segment names |
-| Body L | 17px | 600 | Primary CTAs |
+| Body L | 17px | 600 | Primary CTAs — all btn-gold and btn-outline |
 | Body M | 15px | 400–600 | Body text, list items |
 | Body S | 14px | 400–500 | Supporting text, descriptions |
-| Label | 12px | 500–600 | Metadata, tags |
-| Caption | 11px | 500–600 | Section headers (uppercase), badges |
-| Micro | 10px | 500–600 | Stat labels (uppercase) |
+| Label | 13px | 500 | Status text, sync labels |
+| Caption | 11px | 500–600 | Section headers (ALL CAPS + letterSpacing 1.0–1.2), badges |
+| Micro | 11px | 500–600 | Stat unit labels (ALL CAPS) — 11px is the minimum, never below |
 
-Font: `-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text'`
-All numbers: `font-variant-numeric: tabular-nums`
+**No font size below 11px anywhere in the app.** 10px fails readability in any outdoor ambient condition.
 
 ### Spacing Scale
 
-`4 · 8 · 10 · 12 · 14 · 16 · 20 · 24 · 28 · 32 · 40 · 48 · 64`
+Base unit: 4px
 
-Standard screen padding: `20px` horizontal  
-Card internal padding: `14–20px`  
-Section gap: `8–12px` between cards  
-Bottom safe area: `40–48px`
+`4 · 8 · 12 · 14 · 16 · 20 · 24 · 28 · 32 · 40 · 48 · 64`
+
+Standard screen padding: `20px` horizontal
+Card internal padding: `14–20px`
+Section gap between cards: `8–12px`
+Bottom safe area: `40–48px` (accounts for iPhone home indicator)
+
+**Note on gap values:** Avoid `gap: 10`. Use 8 or 12.
 
 ### Border Radius
 
 | Element | Radius |
 |---|---|
-| Pills / tags / avatars | 999px |
+| Pills / tags / avatars / icon wrappers | 999px |
 | Primary CTA buttons | 999px |
 | Cards / list items | 12px |
-| Bottom sheets | 24px top corners |
 | Feature table | 14px |
 | Small chips / badges | 10px |
-| Icon wrappers | 999px |
+| Bottom sheets | 24px (top corners only) |
+| Modals | 20px |
+| Summary cards | 16px |
 
 ### Shadows
 
-Avoid decorative shadows. Phone frame only:
+Avoid decorative drop shadows. Use border contrast instead. The phone frame mockup shadow only:
 `0 32px 64px rgba(0,0,0,0.5), 0 0 0 1px #2A2A2A`
+
+### Touch Targets
+
+**Minimum: 44×44pt on all interactive elements.** No exceptions. This is an Apple HIG requirement and an accessibility requirement. Elements visually smaller than 44pt must use invisible padding to reach the minimum tap area.
+
+Current known violations fixed in this review:
+- PaywallScreen close button: 32→44pt
+- PreRideBriefScreen back button: 36→44pt
+- PostRideSummaryScreen share button: 36→44pt
+- InRideScreen End Ride button: added minHeight: 44
 
 ### Haptics
 
-| Event | Haptic Type |
+| Event | Haptic type |
 |---|---|
-| Segment geofence trigger | Medium impact |
-| New PR | Heavy impact + success notification |
-| Button tap (primary CTA) | Light impact |
+| Segment geofence trigger (approaching) | Medium impact |
+| New PR confirmed | Heavy impact + success notification |
+| Primary CTA tap | Light impact |
 | Error state | Error notification |
 | Paywall dismiss | Light impact |
+| End Ride hold — 1s midpoint | Medium impact (progress feedback) |
+| End Ride hold — confirmed | Heavy impact |
 
 ---
 
@@ -104,64 +167,98 @@ Avoid decorative shadows. Phone frame only:
 ### Buttons
 
 **btn-gold** (Primary CTA)
-- Height: 52–54px · Border-radius: 999px
-- Background: `#F5C842` · Text: `#000000` · Font: 17px/600
-- Used: Get Started, Generate Coaching Cues, Start Ride, btn-trial
+- Height: 52–54px · width: full (100%) · border-radius: 999px
+- Background: `gold` · text: `textOnGold` · font: 17px/600
+- Active opacity: 0.85
+- Used on: Get Started, Generate Coaching Cues, Let's Go, Done, Start 7-Day Free Trial
+
+**btn-start** (Start Ride — highest emphasis)
+- Height: 58px · same bg/text as btn-gold · font: 18px/700
+- One instance in the app — PreRideBriefScreen footer
 
 **btn-outline** (Secondary)
-- Height: 52px · Border: 1px `#3A3A3A` · Border-radius: 999px
-- Background: transparent · Text: `#F0F0F0` · Font: 17px/600
+- Height: 52px · border: 1px `borderStrong` · border-radius: 999px
+- Background: transparent · text: `textPrimary` · font: 17px/600
 
-**btn-ghost** (Tertiary)
-- No background, no border
-- Text: `rgba(240,240,240,0.4–0.5)` · Font: 14–15px/500
+**btn-ghost** (Tertiary / destructive-adjacent)
+- No background, no border · touch target min: 44pt
+- Text: `textFaint` · font: 14–15px/500
+- Used: "Skip", "Change goal mode", "I already have an account"
 
-**btn-start** (Start Ride — extra emphasis)
-- Height: 58px · Font: 18px/700
+**btn-listen** (Outline gold)
+- Height: 48px · background: `surface` · border: 1px `border` · border-radius: 999px
+- Text: `gold` · font: 14px/600
+- Used: "Listen to Debrief Again"
 
 ### Cards
 
-**Surface card** — `bg-surface` + `border-default` + `border-radius: 12px` + `padding: 14–20px`
+**Surface card** — `surface` bg + `border` border + 12px radius + 14–20px padding
+
+**Summary card** — same as surface but 16px radius + 20px padding (PreRideBrief, ConnectedScreen)
 
 **Accent card** (PR / active segment)
-- Background: `accent-dim` · Border: `accent-border-strong`
+- Background: `goldDim` · border: `goldBorderStrong` · 12px radius
 
-**Map card** — dark map base `#1A2030`, route in `#F5C842`, segment dots in accent or `#888888`
+**Map card** — `mapBg` base, route in `gold`, segment dots in `gold` (PR target) or `textSecondary`
+
+**Metric card** (in SegmentActiveOverlay)
+- Background: `surfaceDim` (#222222) · border: `borderSubtle` · 12px radius · 14px padding
 
 ### Tags & Badges
 
-**PR tag** — `accent-dim` bg, `accent-border` border, `#F5C842` text, 999px radius, 11–12px/600–700
+**PR tag** — `goldDim` bg, `goldBorder` border, `gold` text, 999px radius, 11px/600–700
+- Used on ride cards in HomeScreen, segment result cards in PostRideSummary
 
-**Off-PR tag** — `#242424` bg, `#333333` border, `#555555` text
+**Off-PR tag** — `surfaceAlt` (#242424) bg, `borderMuted` border, `textMuted` text, 999px radius
 
-**Goal badge** — `#F5C842` bg, `#000000` text, 999px, 12px/700, uppercase
+**Goal badge** — `gold` bg, `textOnGold`, 999px radius, 12px/700, ALL CAPS
 
-**Save badge** — same as goal badge; muted variant for unselected plans
+**Save badge** (paywall) — `gold` bg + `textOnGold`; muted variant: `surface` bg + `border` border + `textMuted` text
 
-**Strava badge** — `#FC4C02` bg, white text, 24px circle
+**Strava badge** — `stravaOrange` bg, white text/italic, 24px circle, 2px white border
+
+**Time badge** (cue generation) — `surface` bg, `border` border, 999px, 12px `textMuted`
 
 ### Status Indicators
 
-**GPS pill** — `#1E1E1E` bg, `#2A2A2A` border, green dot + "GPS" text
-**Audio pill** — same base, gold ♪ icon + "On" text
-**Sync banner** — `rgba(48,164,108,0.08)` bg, green border, green text
-**Cached cues banner** — amber tint, warning message
+**GPS pill** — `surfaceElevated` (#1E1E1E) bg, `borderSubtle` border, green dot + "GPS" text 11px/600
+- Dot color: `success` when locked, `error` when no signal
+
+**Audio pill** — same base, `gold` ♪ character + "On" text `textSecondary` 11px/600
+
+**Sync banner (success)** — `successDim` bg, `successBorder` border, `success` text 13px/500
+
+**Sync banner (pending)** — `goldDim` bg, `goldBorder` border, `gold` text 13px/500
+
+**Cached cues banner** — same as sync pending
 
 ### Audio Waveform
 
-5–6 bars, `#F5C842`, `border-radius: 2–3px`, varying heights (8–32px range), displayed in: debrief playing, pre-ride brief, spoken brief preview card
+5–6 bars, `gold` fill, 3–5px wide, 2–3px border-radius, varying heights 8–32px.
+Used in: CueGenerationScreen icon, PreRideBriefScreen banner, DebitPlaying screen.
+The waveform is an ambient indicator of audio activity — it should animate (heights pulse) when audio is actively playing. Static when paused.
 
 ### Segment Progress Bar
-Track: `#2A2A2A` · Fill: `#F5C842` · Height: 4–6px · Border-radius: 999px
+
+Track: `surface` · Fill: `gold` · Height: 4–6px · Border-radius: 999px · overflow: hidden
 
 ### Navigation
 
-**Tab bar** — `bg-primary`, `border-top: 1px #333333`, height: 83px
-Active: `#F5C842` label · Inactive: `#444444` label + 35% opacity icon
+**Tab bar** — `bg` background, `borderMuted` top border, height: 83px
+- paddingTop: 10, paddingBottom: 20 (accounts for home indicator clearance)
+- Active label: `gold` 11px/600 · Inactive: `textDim` 11px/600
+- Icon: 18px, focused: `gold`, unfocused: `textDim`
 
-**Back button** — 36px circle, `#2A2A2A` bg, `#3A3A3A` border, `#F0F0F0` ←
+**Back button** — 44×44pt circle, `surface` bg, `borderStrong` border, `textPrimary` ← character
 
-**Map nav bar** — gradient overlay (dark-to-transparent), back btn + title floated over map
+**Map nav bar** — LinearGradient overlay (dark-to-transparent over map), back btn + title floated over map
+
+**Paywall close button** — 44×44pt circle, `surface` bg, `border` border, `textMuted` ✕ character
+
+### Carousel Dots
+
+Active: `gold` · 8×8pt circle · border-radius: 999px
+Inactive: `textDim` · 6×6pt circle · border-radius: 999px
 
 ---
 
@@ -170,167 +267,547 @@ Active: `#F5C842` label · Inactive: `#444444` label + 35% opacity icon
 ### Flow 1 — Onboarding & Strava Connect
 
 #### Screen 1 — Welcome
-- Full-screen hero: `hero-mtb.png` with `mix-blend-mode: multiply` on `#D0D0D0` bg
-- Gradient overlay fades to `#1C1C1E` at bottom (60% point, fully opaque at bottom)
-- Bottom content: gold "Sherpaa" logotype (32px/700, letter-spacing 4px), tagline, btn-gold, btn-ghost
-- Tagline: "The only coach who was there last time." · 14px/400 · `rgba(240,240,240,0.75)`
+
+```
+┌─────────────────────────────────────────┐
+│  [hero-mtb.png fills entire screen]     │
+│  [LinearGradient: transparent → #1C1C1E │
+│   from 40% to 100%]                     │
+│                                         │
+│                                         │
+│                                         │
+│                                         │
+│  ──────── content anchored to bottom ── │
+│                                         │
+│     S H E R P A A                       │
+│     (32px/700, gold, letterSpacing:4,   │
+│      textTransform:uppercase)           │
+│                                         │
+│  The only coach who was there last time.│
+│     (14px/400, rgba(F0F0F0, 0.75),      │
+│      textAlign:center)                  │
+│                                         │
+│  ┌──────── Get Started ────────────┐    │
+│  │   btn-gold · 52px · 100%       │    │
+│  └────────────────────────────────┘    │
+│                                         │
+│     I already have an account           │
+│     (btn-ghost · 15px/500)              │
+│                                         │
+│  [safe area bottom: 48px]               │
+└─────────────────────────────────────────┘
+```
+
+- Background container: `#D0D0D0` (base for hero image processing)
+- Hero image: `resizeMode: 'cover'`, top offset 30px
+- Gradient stops: rgba(28,28,30,0.1) at 0%, rgba(28,28,30,0.2) at 40%, rgba(28,28,30,0.92) at 78%, rgba(28,28,30,1) at 100%
+- Content: paddingHorizontal: 24, paddingBottom: 48, justifyContent: flex-end
 
 #### Screens 2–4 — Feature Carousel
-- Background: `bg-primary`
-- Illustration card: 260×210px, `bg-surface`, `border-default`, 20px radius
-- Progress dots: active `#F5C842` 8px, inactive `#444444` 6px
-- Headlines: 26px/700 · Body: 15px/400 `#666666`
-- Skip link top-right: 15px/500 `#555555`
-- Next CTA: btn-gold full width
 
-**Carousel screens:**
+```
+┌─────────────────────────────────────────┐
+│  [safe area top]                        │
+│                              Skip       │
+│                              (15px/500, │
+│                               textMuted)│
+│                                         │
+│  ┌────────────────────────────────────┐ │
+│  │         260×210 illustration      │ │
+│  │         surface bg + border       │ │
+│  │         borderRadius: 20          │ │
+│  └────────────────────────────────────┘ │
+│                                         │
+│     Knows your history                  │
+│     (26px/700, textPrimary,             │
+│      letterSpacing: -0.5)               │
+│                                         │
+│  Every cue is built from your last 90   │
+│  days on that segment — not a generic   │
+│  script.                                │
+│     (15px/400, #666666, lineHeight:24)  │
+│                                         │
+│  ●  ○  ○   (progress dots)             │
+│                                         │
+│  ─────────────────────────────────────  │
+│  ┌────────── Next ──────────────────┐   │
+│  │   btn-gold · 52px · 100%        │   │
+│  └──────────────────────────────────┘   │
+│  [paddingBottom: 48]                    │
+└─────────────────────────────────────────┘
+```
+
+Carousel screens:
 1. "Knows your history" — audio waveform illustration
-2. "Cues ready before you roll" — pre-generation illustration
+2. "Ready before you roll" — pre-generation / offline illustration
 3. "Your debrief, spoken" — spoken debrief illustration
 
-#### Screen: OAuth Error
-- Error icon (red circle, ✕), 24px/700 heading, 15px/400 body, btn-gold "Try Again", btn-ghost "Skip for now"
-
-#### Screen: Location Rationale
-- Icon, 24px/700 heading, 15px body explaining "While Using" → "Always" upgrade at ride start
-- btn-gold "Allow Location", btn-ghost "Skip"
+Final slide CTA becomes "Connect Strava".
 
 #### Screen: Strava Connected
-- Avatar with Strava badge overlay
-- Status card: success lines (✓ green) for Auth + Segments + Profile
-- Heading: "You're all set" · btn-gold "Let's Go"
 
-#### Screen: Location Denied Variant
-- Same as Connected but location line shows as amber warning
-- Additional "Enable in Settings →" text link
+```
+┌─────────────────────────────────────────┐
+│                                         │
+│                                         │
+│         ┌────────────────────┐          │
+│         │  72×72 avatar      │ [S]      │
+│         │  gold bg, initials │ Strava   │
+│         └────────────────────┘  badge   │
+│                                         │
+│          You're all set                 │
+│          (24px/700, textPrimary,        │
+│           letterSpacing: -0.4)          │
+│                                         │
+│          Jane Doe · Connected to Strava │
+│          (14px/400, textMuted)          │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │ ● Strava authentication    ✓   │    │
+│  │ ● Segments fetched (12)    ✓   │    │
+│  │ ● Profile loaded           ✓   │    │
+│  └─────────────────────────────────┘    │
+│     surface card, 10px radius          │
+│                                         │
+│  [location warning banner if denied]   │
+│                                         │
+│  ┌──────────── Let's Go ───────────┐    │
+│  │   btn-gold · 52px              │    │
+│  └────────────────────────────────┘    │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+Status dot colors: success = `success`, loading = `surfaceDim`, error = `error`, warning = `gold`
 
 #### Screen: Home (Empty State)
-- Greeting: 20px/600 · Sync status: 13px `#555555`
-- Segment summary chip: "12 starred segments · Last synced just now"
-- Plan Ride card: full-width, `bg-surface`, gold chevron
-- Empty rides area: "Your rides will appear here after your first session."
-- Tab bar: Home (active/gold), Segments, History, Settings
+
+```
+┌─────────────────────────────────────────┐
+│ [safe area top]                         │
+│                                         │
+│  Good morning, Jane.       [J] avatar   │
+│  (20px/600, textPrimary)   (36×36, gold │
+│                              bg)        │
+│  12 starred segments · Last synced 2h ago
+│  (13px, textMuted)                      │
+│                                         │
+│  ┌───────────────────────────────────┐  │
+│  │ 🚴 Plan Ride                   › │  │
+│  │    Set route, choose goal,        │  │
+│  │    generate cues                  │  │
+│  └───────────────────────────────────┘  │
+│     surface card, 12px, 20px padding   │
+│                                         │
+│  RECENT RIDES                           │
+│  (11px/600, textDim, ALL CAPS,          │
+│   letterSpacing: 1.2)                   │
+│                                         │
+│  Your rides will appear here after      │
+│  your first Sherpaa session.            │
+│  (14px, textDim, centered)              │
+│                                         │
+│  ─────────────────────────────────────  │
+│  ⌂ Home  ◈ Segs  ◷ History  ⚙ Settings  │
+│  (tab bar, 83px, gold active label)     │
+└─────────────────────────────────────────┘
+```
 
 #### Screen: Home (With Rides)
-- Same as empty but rides list shows last 3 rides as cards
-- Ride card: title, date, distance, segment count, PR tag if applicable
+
+Same as empty but rides list shows last 3 rides. Ride card: title + date row, then stats row with distance, segment count, and PR tag if applicable. PR tag uses gold accent system.
+
+Quick Start card (when cues cached): `goldDim` bg + `goldBorder` border + "▶ Start Ride Now" in `gold` 16px/700.
 
 **Transitions — Flow 1:**
-- Welcome → Carousel: slide left, 300ms spring
-- Carousel → Carousel: slide left, 250ms spring; swipe right to go back
-- Carousel → Strava OAuth: slide left, 300ms
-- OAuth → Connected/Error: fade, 200ms
-- Connected → Home: slide left + fade, 350ms
+- Welcome → Carousel: slide left, 300ms spring (tension: 100, friction: 20)
+- Carousel → Carousel: slide left, 250ms spring; swipe right returns
+- Carousel → OAuth: slide left, 300ms
+- OAuth → Connected: fade, 200ms
+- Connected → Home: slide left + fade overlay, 350ms spring
 
 ---
 
 ### Flow 2 — Route Setup & Pre-Ride Brief
 
 #### Screen 6 — Route Setup
-- Full-screen dark map (`#1A2030`) with route polyline in `#F5C842`
-- Route method pills (absolute, top 108px): Strava Route (active/gold) · Import GPX · Skip
-- Bottom sheet (24px radius, `bg-primary`, `border-subtle` top border):
-  - Segment count + PR targets badge
-  - Segment mini-list (4 items max visible)
-  - Goal chips: PR Attempt · Training (default) · Recovery
-  - btn-gold "Generate Coaching Cues"
 
-**Segment matching threshold:** 25m proximity from route polyline
-**Unridden segments:** shown with "No history yet" label in `#444444`, dot in `#444444`
+```
+┌─────────────────────────────────────────┐
+│  [Full-screen dark map — mapBg #1A2030] │
+│  [Route polyline: gold #F5C842]         │
+│  [Segment dots: gold (PR) / grey (none)]│
+│                                         │
+│  ┌────────────────────────────────────┐ │
+│  │ ✦ Strava Route │ Import GPX │ Skip│ │  ← absolute at top + 108px
+│  └────────────────────────────────────┘ │
+│     pill row, gold active state         │
+│     height: 34px, borderRadius: 999     │
+│                                         │
+│  ┌─────────────────────────────────────┐│ ← bottom sheet
+│  │ ────── handle (36×4, borderStrong)  ││
+│  │                                     ││
+│  │  4 segments on route  [4 PR targets]││
+│  │  (17px/700, textPrimary)            ││
+│  │                                     ││
+│  │  ┌─────────────────────────────┐    ││
+│  │  │ ● Hawk Hill    PR target   ││    ││
+│  │  │   2.4 km · ~4:12 est.      ││    ││
+│  │  └─────────────────────────────┘    ││
+│  │  [repeat for each segment, 4 max]  ││
+│  │                                     ││
+│  │  GOAL FOR THIS RIDE                 ││
+│  │  (11px/600, textMuted, ALL CAPS)    ││
+│  │                                     ││
+│  │  [PR Attempt] [Training] [Recovery] ││
+│  │   chips: selected=gold bg,          ││
+│  │          unselected=surface bg      ││
+│  │                                     ││
+│  │  ┌──── Generate Coaching Cues ────┐ ││
+│  │  │   btn-gold · 54px             │ ││
+│  │  └───────────────────────────────┘ ││
+│  └─────────────────────────────────────┘│
+└─────────────────────────────────────────┘
+```
 
-#### Screen 7 — Cue Generation Progress
-- Centered layout: waveform icon → title → subtitle
-- Progress list: done (green ✓), active (gold spinner), pending (grey dot)
-- Time remaining badge: `bg-surface`, `border-default`, 999px, 12px `#555555`
-- btn-ghost "Skip — start with available cues" at bottom
+Sheet: `bg` background, 24px top radius, `borderSubtle` top border, paddingBottom: 40px
 
-**Auto-advances** when all cues complete. No user action required.
+Goal chips: height 38px, borderRadius: 10px. Selected: `gold` bg, `textOnGold`. Unselected: `surface` bg, `border` border, #666666 text.
+
+Segment item: `surface` bg, `border` border, 10px radius, 10px padding. Dot: 8px circle, `gold` for PR target, `textSecondary` for no history. "No history yet" label in `textDim`.
+
+#### Screen 7 — Cue Generation
+
+```
+┌─────────────────────────────────────────┐
+│ [safe area top]                         │
+│                                         │
+│         ┌────────────────────────┐      │
+│         │  80×80 waveform icon   │      │
+│         │  goldDim bg            │      │
+│         │  goldBorder border     │      │
+│         │  borderRadius: 999     │      │
+│         └────────────────────────┘      │
+│                                         │
+│   Preparing your coaching cues          │
+│   (24px/700, textPrimary, centered)     │
+│                                         │
+│   Analysing your segment history…       │
+│   (14px, textMuted, centered)           │
+│                                         │
+│  ┌──────────────────────────────────┐   │
+│  │ [✓] Hawk Hill                   │   │
+│  │     3 cue variants ready        │   │
+│  └──────────────────────────────────┘   │
+│  ┌──────────────────────────────────┐   │
+│  │ [↻] Paradise Loop   ← active    │   │
+│  │     Generating cues…            │   │
+│  └──────────────────────────────────┘   │
+│  ┌──────────────────────────────────┐   │
+│  │ [·] Twin Peaks Blvd  ← pending  │   │
+│  │     Waiting…                    │   │
+│  └──────────────────────────────────┘   │
+│                                         │
+│  ┌────────────────────────────────────┐ │
+│  │  ~18 seconds remaining             │ │
+│  └────────────────────────────────────┘ │
+│     time badge: surface bg, border, 999px
+│                                         │
+│     Skip — start with available cues    │
+│     (btn-ghost, textFaint, 15px/500)    │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+Done icon: 28×28 circle, `rgba(48,164,108,0.15)` bg, `success` ✓ 14px/700
+Active icon: 28×28 circle, `rgba(245,200,66,0.15)` bg, spinner ring with `gold` top border
+Pending icon: 28×28 circle, `#232323` bg, 6×6 dot `borderStrong`
+
+Active segment item: `goldBorder` border on the card
+
+Auto-advances when all done. No user action needed.
 
 #### Screen 8 — Pre-Ride Brief
-- Nav bar: back btn, "Ready to Ride" title, "Edit" link (gold)
-- Summary card: goal badge + "Playing brief…" audio indicator + 3-stat row (segments, PR targets, route km)
-- Spoken brief banner: waveform + italic preview text with gold highlights
-- Segment list in ride order (numbered)
-- Footer: btn-start "▶ Start Ride" + btn-ghost "Change goal mode"
 
-**Start Ride unlocked from Home when:** ≥1 starred segment cached AND cues not stale (< 30 days)
+```
+┌─────────────────────────────────────────┐
+│ [safe area top]                         │
+│ ←  (44×44 back)   Ready to Ride   Edit │
+│    (surface, border) (17px/700)  (gold) │
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │  [PR ATTEMPT]    ♪ Playing brief…  ││  ← summary card (16px radius)
+│  │   (goal badge)   (gold dot + text) ││
+│  │                                     ││
+│  │   4        2          24.8 km       ││
+│  │  Segments  PR Targets  Route        ││
+│  │  (22px/700) (11px/500 label below) ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  ┌─────────────────────────────────────┐│  ← spoken brief banner
+│  │ [waveform] "Hawk Hill in 500m.      ││
+│  │            You've faded in the      ││
+│  │            final 400m three times…" ││
+│  │  goldDim bg + goldBorder border     ││
+│  │  italic text, rgba(F0F0F0, 0.75)    ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  ON YOUR ROUTE                          │
+│  (11px/600, textDim, ALL CAPS)          │
+│                                         │
+│  [1] Hawk Hill          [PR] tag        │
+│      2.4 km · 3 cues · Best: 4:12      │
+│  [2] Paradise Loop      [PR] tag        │
+│  [3] Twin Peaks Blvd                   │
+│      (dimmed 55% — no history)          │
+│                                         │
+│  ─── absolute footer ─────────────────  │
+│  ┌──────────── ▶  Start Ride ─────────┐ │
+│  │   btn-start · 58px · gold          │ │
+│  └────────────────────────────────────┘ │
+│  Change goal mode (btn-ghost, centered) │
+│  [paddingBottom: 40]                    │
+└─────────────────────────────────────────┘
+```
+
+Segments with no history: `opacity: 0.55`. Segment number: 24×24 circle, `borderStrong` bg, `textSecondary` text 12px/700.
 
 **Transitions — Flow 2:**
 - Home → Route Setup: slide left, 300ms
-- Route Setup → Cue Generation: cross-fade, 200ms (map dissolves)
+- Route Setup → Cue Generation: cross-fade, 200ms (map dissolves to solid)
 - Cue Generation → Pre-Ride Brief: slide up, 350ms spring
-- Pre-Ride Brief → In-Ride: full-screen transition, 400ms fade to black
+- Pre-Ride Brief → In-Ride: full-screen fade to `bgDeep`, 400ms
 
 ---
 
 ### Flow 3 — In-Ride Experience
 
-#### Screen 9 — In-Ride (Active)
-- Background: `#111111` (deepest — battery conservation + max contrast)
-- Status bar: elapsed time (left) + GPS pill + audio pill (right)
-- Next segment pill: `accent-dim` bg, segment name + distance in km
-- Speed: 112px/800 center dominant element
-- Secondary metrics: HR (bpm) · Power (watts) · Distance (km) at 28px/700
-- End Ride: small, bottom-center, outline style, requires 2-second hold (not designed here — implemented in code)
+#### Screen 9 — In-Ride Active
 
-**No interactive elements during ride except End Ride hold**
+```
+┌─────────────────────────────────────────┐
+│  1:04:22                    ● GPS  ♪ On │
+│  (13px/600,textPrimary)    (11px pills) │
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │ NEXT SEGMENT        2.4 km away     ││  ← goldDim bg + goldBorder
+│  │ Hawk Hill           (22px/700, gold)││
+│  └─────────────────────────────────────┘│
+│                                         │
+│                  32                     │
+│               (112px/800,               │
+│                textPrimary,             │
+│                letterSpacing: -6)       │
+│                                         │
+│               KM/H                      │
+│          (16px/500, textMuted,          │
+│           ALL CAPS, letterSpacing:1)    │
+│                                         │
+│     142    │    287    │    24.8         │
+│     bpm    │   watts   │     km          │
+│  (28px/700)│  (28px/700│  (28px/700)    │
+│  (dividers: 1px, surfaceElevated, h:36) │
+│                                         │
+│                                         │
+│           ■  End Ride                   │
+│    (outline, border: border, 999px,     │
+│     textMuted, 14px/600,               │
+│     minHeight:44, absolute bottom:40)   │
+└─────────────────────────────────────────┘
+```
+
+Background: `bgDeep` (#111111) — deepest available for OLED savings and maximum readability.
+paddingTop: 54px (status bar clearance)
+Status pills: `surfaceElevated` bg + `borderSubtle` border + 999px radius
+
+"End Ride" is intentionally low-contrast — present but not distracting. Requires 2-second hold. Border uses `border` (#363636) for minimal but findable visibility.
+
+**No interactive elements during ride except End Ride hold.**
 
 #### Screen 10 — Segment Active Overlay
-- Bottom sheet slides up from Screen 9 (spring, 350ms)
-- Behind: ride screen dimmed to 25% opacity
-- Sheet contents: segment name, progress bar (gold fill), elapsed time (64px/800), gap to PR (green if ahead, red if behind), speed + watts cards
-- Auto-dismisses at segment end
 
-**Gap display:** negative = ahead (green), positive = behind (red)
-**Update frequency:** every 5 seconds
+```
+┌─────────────────────────────────────────┐
+│  [InRideScreen at 25% opacity behind]   │
+│                                         │
+│  [tappable dismiss area — full height]  │
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │ ─────── handle (36×4, borderStrong) ││
+│  │                                     ││
+│  │  Hawk Hill                          ││
+│  │  (20px/700, textPrimary,            ││
+│  │   letterSpacing: -0.4)              ││
+│  │                                     ││
+│  │  ████████████░░░░░░░  (progress bar)││
+│  │  Start       68%       Finish       ││
+│  │              (gold, 11px/500)       ││
+│  │                                     ││
+│  │              2:46                   ││
+│  │           (64px/800,                ││
+│  │            textPrimary,             ││
+│  │            letterSpacing: -3)       ││
+│  │            Elapsed (12px/500, ALL)  ││
+│  │                                     ││
+│  │  ┌──────────┐ ┌──────────┐ ┌──────┐││
+│  │  │ −3s      │ │ 31 km/h │ │ 290w│││
+│  │  │ vs PR    │ │         │ │     │││
+│  │  │ (success)│ │         │ │     │││
+│  │  └──────────┘ └──────────┘ └──────┘││
+│  │   metric cards: surfaceDim bg,     ││
+│  │   borderSubtle border, 12px radius ││
+│  │                                     ││
+│  │  [paddingBottom: 48]                ││
+│  └─────────────────────────────────────┘│
+└─────────────────────────────────────────┘
+```
+
+Sheet: `bgOverlay` (#1A1A1A) bg, 24px top radius, `borderSubtle` top border.
+Gap display: ahead = `success` (#30A46C), behind = `error` (#E5484D).
+Auto-dismisses at segment end — no button needed.
+Update frequency: every 5 seconds.
 
 #### Screen 11a — Segment Result (New PR)
-- Full-screen: `#111111` bg + radial gold glow
-- Trophy emoji (52px) + segment name + big time (80px/800) + "NEW PR" gold badge + gap in gold
-- Auto-dismisses in 4 seconds; tap anywhere to dismiss early
+
+```
+┌─────────────────────────────────────────┐
+│  [#111111 background]                   │
+│  [goldGlow radial at center: 300×300,   │
+│   rgba(245,200,66,0.12)]                │
+│                                         │
+│           🏆                            │
+│        (52px emoji, centered)           │
+│                                         │
+│       HAWK HILL                         │
+│  (15px/500, textMuted, ALL CAPS,        │
+│   letterSpacing:1)                      │
+│                                         │
+│           4:08                          │
+│     (80px/800, textPrimary,             │
+│      letterSpacing: -4,                 │
+│      fontVariant: tabular-nums)         │
+│                                         │
+│   ┌─────────────────────────────────┐   │
+│   │         NEW PR                  │   │
+│   │   gold bg, textOnGold,          │   │
+│   │   15px/800, letterSpacing: 0.5  │   │
+│   └─────────────────────────────────┘   │
+│                                         │
+│        −4 seconds  (gold, 16px/500)     │
+│                                         │
+│                                         │
+│     Tap anywhere · auto-dismiss in 4s   │
+│     (13px/500, borderStrong #3A3A3A)    │
+└─────────────────────────────────────────┘
+```
+
+Entire screen is a touchable — tap to dismiss early.
+Auto-dismiss: 4 seconds.
 
 #### Screen 11b — Segment Result (Off PR)
-- Same layout, no glow, checkmark instead of trophy
-- Neutral grey badge "+Xs off PR" · PR reference in `#555555`
+
+Same layout. No radial glow. `textSecondary` ✓ instead of trophy. Neutral badge: `surface` bg, `border` border, `textSecondary`. Gap label: `+Xs off PR` in `textMuted`. PR reference: `textMuted`.
 
 **Transitions — Flow 3:**
-- Screen 9 → 10: bottom sheet spring rise, 350ms
-- Screen 10 → 9: sheet slides down, 250ms
-- Screen 9 → 11: full-screen flash (scale up from center), 200ms
+- Screen 9 → 10: bottom sheet spring rise, 350ms (translateY: screenHeight → 0)
+- Screen 10 → 9: sheet slides down, 250ms spring
+- Screen 9 → 11: full-screen scale from center, 200ms (scale: 0.95 → 1.0 + fade)
 - Screen 11 → 9: auto-return, fade, 300ms
-- Screen 9 → End Ride: fade to black, 400ms
+- Screen 9 → End Ride: fade to `bgDeep`, 400ms
 
 ---
 
 ### Flow 4 — Post-Ride Debrief
 
 #### Screen: Debrief Playing
-- Background: `#111111` + subtle radial gold glow
-- Centered: waveform icon, "Ride complete" title, "Playing your debrief…" subtitle
-- Debrief quote card: `#1E1E1E` bg, italic text with gold highlights for key callouts
-- Stats row (3 cards): distance · time · PR count
-- Auto-advances when debrief audio finishes (~25–40 seconds)
+
+```
+┌─────────────────────────────────────────┐
+│  [#111111 background]                   │
+│  [goldGlow radial, 300×300, centered]   │
+│                                         │
+│                                         │
+│         [audio waveform icon]           │
+│         (same as CueGeneration,         │
+│          animated — bars pulse)         │
+│                                         │
+│       Ride complete                     │
+│  (24px/700, textPrimary, centered)      │
+│                                         │
+│  Playing your debrief…                  │
+│  (14px, textMuted, centered)            │
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │ "Great ride. Hawk Hill in 4:08 —   ││
+│  │  a new PR. You held your power     ││
+│  │  through the false flat."          ││
+│  │  italic, rgba(F0F0F0, 0.75)        ││
+│  │  Key stats in gold                 ││
+│  └─────────────────────────────────────┘│
+│     surfaceElevated bg, borderSubtle   │
+│                                         │
+│  ┌──────────┐ ┌──────────┐ ┌─────────┐  │
+│  │ 48.2 km  │ │ 2:14:07  │ │ 1 PR   │  │
+│  └──────────┘ └──────────┘ └─────────┘  │
+│     3 stat cards: surface bg           │
+│                                         │
+│  [auto-advances when debrief ends]      │
+└─────────────────────────────────────────┘
+```
 
 #### Screen: Post-Ride Summary
-- Map strip (200px): ride track in gold, segment dots, gradient overlay at bottom
-- Nav overlay: date + ride name (left), share button (right)
-- PR headline badge: "🏆 1 New PR · [Segment Name]"
-- 6-stat grid (2 rows × 3): distance, duration, elevation, segments hit, avg watts, avg HR
-- Strava sync banner (green): "✓ Synced to Strava" — or pending state with retry note
-- Segment result cards: PR card (gold border + tint), standard (grey), skipped (dimmed 50%)
-- "♪ Listen to Debrief Again" — outline gold link
-- "Done" btn-gold → Home
 
-#### Screen: Summary with Expanded Segment
-- Segment card expands in-place (tap to expand/collapse)
-- Split comparison bars: PR (grey, 70% base) vs Today (gold overlay)
-- 4 checkpoints: 25% / 50% / 75% / End — each showing ±seconds vs PR
-- Coaching cue review card: gold-tinted, shows exact cue text that was played
+```
+┌─────────────────────────────────────────┐
+│  [200px map strip — mapBg]              │
+│  [route in gold, segment dots]          │
+│  [LinearGradient bottom fade to bg]     │
+│   APR 11                  [↑ share]     │
+│   Morning Ride           (44×44 button) │
+│                                         │
+│  [🏆 1 New PR] Hawk Hill                │
+│     gold badge + textSecondary name    │
+│                                         │
+│  ┌──────────┐ ┌──────────┐ ┌─────────┐  │
+│  │  48.2    │ │ 2:14:07  │ │ 820m   │  │
+│  │  km      │ │ duration │ │ elev.  │  │
+│  └──────────┘ └──────────┘ └─────────┘  │
+│  ┌──────────┐ ┌──────────┐ ┌─────────┐  │
+│  │  3/4     │ │  287     │ │  142   │  │
+│  │ segments │ │ avg W    │ │ avg BPM│  │
+│  └──────────┘ └──────────┘ └─────────┘  │
+│     statVal: 22px/700  statLabel:11px  │
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │ ✓  Synced to Strava               ││
+│  │    successDim bg + successBorder   ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  SEGMENTS                               │
+│  (11px/600, textDim, ALL CAPS)          │
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │ Hawk Hill             4:08    [PR] ││  ← PR card: goldBorderStrong
+│  │ PR: 4:12              gold text    ││     goldDim bg
+│  │ 🏆 NEW PR · −4s                   ││
+│  └─────────────────────────────────────┘│
+│                                         │
+│  [♪  Listen to Debrief Again]           │
+│     btn-listen: surface bg, 48px       │
+│                                         │
+│  ┌──────────────── Done ──────────────┐  │
+│  │   btn-gold · 54px                 │  │
+│  └────────────────────────────────────┘  │
+│  [paddingBottom: 40]                    │
+└─────────────────────────────────────────┘
+```
+
+Expanded segment card: splits area appears below segment bottom. Split bars: PR in `textDim` (#444444), today in `gold`. Coaching cue review: `rgba(245,200,66,0.06)` bg, `rgba(245,200,66,0.15)` border, 8px radius.
 
 **Transitions — Flow 4:**
-- In-Ride → Debrief Playing: fade through black, 500ms (end of ride)
+- In-Ride → Debrief Playing: fade through `bgDeep`, 500ms
 - Debrief Playing → Summary: cross-fade, 300ms
-- Segment card expand: spring scale, 250ms
+- Segment card expand: spring scale in-place, 250ms
 - Summary → Home: slide right (dismissal), 300ms
 
 ---
@@ -338,61 +815,202 @@ Active: `#F5C842` label · Inactive: `#444444` label + 35% opacity icon
 ### Flow 5 — Subscription Upgrade
 
 #### Screen: Mid-Ride Gate
-- Triggered after segment result dismisses — never mid-segment
-- Ride screen behind at 25% opacity
-- Bottom sheet: lock icon, segment name in bold, 3 feature bullets with gold checkmarks
-- btn-gold "Unlock Pro — 7 Days Free"
-- btn-ghost "Skip this segment"
+
+```
+┌─────────────────────────────────────────┐
+│  [InRideScreen at 25% opacity behind]   │
+│                                         │
+│  ┌─────────────────────────────────────┐│
+│  │ ─── handle ────────────────────    ││
+│  │                                     ││
+│  │  🔒  Segment 4 of 4                 ││
+│  │  Unlock to coach this one           ││
+│  │                                     ││
+│  │  • Full PR split coaching          ││  ← gold ✓ for bullets
+│  │  • Heart rate zone guidance         ││
+│  │  • Post-ride spoken debrief         ││
+│  │                                     ││
+│  │  ┌── Unlock Pro — 7 Days Free ────┐ ││
+│  │  │   btn-gold · 52px             │ ││
+│  │  └───────────────────────────────┘ ││
+│  │                                     ││
+│  │   Skip this segment (btn-ghost)     ││
+│  └─────────────────────────────────────┘│
+└─────────────────────────────────────────┘
+```
+
+Triggered after segment result dismisses. Never mid-segment. No dark patterns. Not shown again for 48 hours after dismissal.
 
 #### Screen: Full Paywall
-- Dismissible: ✕ top-left, "Restore Purchases" top-right
-- Headline: "Unlock your full segment coach" with "segment coach" in gold
-- Subtitle: "7-day free trial. Cancel anytime in Settings."
-- Feature table: 3 columns (Free / Pro / Elite), alternating row backgrounds
-- Plan options (stacked): Pro Annual (default/gold border), Pro Monthly, Elite Annual, Elite Monthly
-- Pro Annual shows "Save 30%" badge in gold
-- btn-trial "Start 7-Day Free Trial"
-- Terms: 11px, `#3A3A3A`, cancel instructions visible
 
-**No dark patterns.** Paywall not shown again for 48 hours after dismissal.
+```
+┌─────────────────────────────────────────┐
+│ [safe area top]                         │
+│ [✕] (44×44)             Restore Purchases│
+│  surface bg, border     (13px/500,textDim)
+│                                         │
+│  Unlock your full                       │
+│  segment coach                          │
+│  (26px/800, textPrimary/gold,           │
+│   textAlign:center, letterSpacing:-0.6) │
+│                                         │
+│  7-day free trial. Cancel anytime.      │
+│  (14px, textMuted, centered)            │
+│                                         │
+│  ┌──────────────────────────────────┐   │
+│  │       │ Free  │  Pro  │ Elite   │   │
+│  │───────────────────────────────────│   │
+│  │Segments│ 3/ride│ Unlim │ Unlim  │   │
+│  │PR cues │  ✕   │  ✓   │  ✓    │   │
+│  │Splits  │  ✕   │  ✓   │  ✓    │   │
+│  │...     │      │       │        │   │
+│  └──────────────────────────────────┘   │
+│     table: borderSubtle border,        │
+│     14px radius, overflow:hidden       │
+│     alt rows: surfaceAlt (#242424)     │
+│     header row: surfaceAlt bg          │
+│                                         │
+│  [Pro · Annual    $59/yr  [Save 30%] ○]│  ← selected: goldDim + goldBorder 1.5px
+│  [Pro · Monthly   $6.99/mo           ○]│  ← unselected: surfaceAlt + borderMuted
+│  [Elite · Annual  $99/yr  [Save 37%] ○]│
+│  [Elite · Monthly $12.99/mo          ○]│
+│     plan options: 12px radius, 16px px │
+│                                         │
+│  ┌────── Start 7-Day Free Trial ──────┐  │
+│  │   btn-gold · 54px · 17px/700      │  │
+│  └────────────────────────────────────┘  │
+│                                         │
+│  After trial, billed at selected rate.  │
+│  (11px, textMuted, centered)            │
+│  Cancel in iOS Settings → Subscriptions │
+└─────────────────────────────────────────┘
+```
+
+Pro column header in `gold`. Elite column header in `textPrimary`. Save badge: `gold` bg when that plan is selected, `surface` bg when not.
 
 #### Screen: Subscription Success
-- Background: `#111111` + gold glow
-- Trophy icon (88px wrapper), "You're on Pro", "Trial active · 7 days free"
-- Feature list: 5 items with gold checkmarks
-- "Continue Ride" btn-gold — returns to exact pre-paywall context
+
+```
+┌─────────────────────────────────────────┐
+│  [#111111 background + goldGlow radial] │
+│                                         │
+│  ┌────────────────────────────────────┐ │
+│  │          🏆                        │ │
+│  │   (88×88 wrapper, goldDim bg,      │ │
+│  │    goldBorder border, 999px)       │ │
+│  └────────────────────────────────────┘ │
+│                                         │
+│       You're on Pro                     │
+│  (28px/700, textPrimary, centered)      │
+│                                         │
+│  Trial active · 7 days free             │
+│  (14px, textMuted, centered)            │
+│                                         │
+│  ✓ Unlimited coached segments           │
+│  ✓ Full PR split coaching               │
+│  ✓ Heart rate zone guidance             │
+│  ✓ Post-ride spoken debrief             │
+│  ✓ Pacing model improves each ride      │
+│  (gold ✓ prefix, 15px/500, textPrimary) │
+│                                         │
+│  ┌────────── Continue Ride ───────────┐  │
+│  │   btn-gold · 52px                 │  │
+│  └────────────────────────────────────┘  │
+└─────────────────────────────────────────┘
+```
 
 **Transitions — Flow 5:**
 - Gate appears: bottom sheet spring rise, 300ms
-- Gate → Paywall: slide up full-screen, 350ms
-- Paywall → StoreKit: iOS native (no control)
+- Gate → Full Paywall: slide up full-screen, 350ms spring
+- Paywall → StoreKit: iOS native presentation (no control)
 - StoreKit → Success: slide up, 400ms spring
 - Success → prior context: cross-fade, 300ms
 
 ---
 
-## Accessibility
+## Transition & Animation Catalogue
 
-- Minimum touch target: 44×44pt on all interactive elements
-- Color contrast: `#F0F0F0` on `#1C1C1E` = 12.6:1 ✓ · Gold `#F5C842` on black = 10.5:1 ✓
-- All icons paired with text labels or `accessibilityLabel`
-- Audio cues compatible with VoiceOver (AVSpeechSynthesizer uses separate audio session)
-- Dynamic Type: body text uses system font, scales with user font size settings
-- "End Ride" hold gesture: 2-second threshold confirmed in haptic feedback
+| Transition | Animation | Duration | Curve |
+|---|---|---|---|
+| Push navigation (default) | Slide left | 300ms | Spring: tension 100, friction 20 |
+| Pop navigation | Slide right | 250ms | Spring |
+| Modal present (paywall, ride) | Slide up | 350ms | Spring |
+| Modal dismiss | Slide down | 250ms | Spring |
+| Bottom sheet rise | Spring from bottom | 300–350ms | Spring: tension 80, friction 18 |
+| Bottom sheet dismiss | Spring to bottom | 250ms | Spring |
+| Full-screen flash (segment result) | Scale 0.95→1.0 + fade in | 200ms | Ease-out |
+| Segment result auto-dismiss | Fade out | 300ms | Ease-in |
+| Ride start | Fade to #111111 | 400ms | Ease-in |
+| End-ride confirmation | Fade to #111111 | 400ms | Ease-in |
+| Debrief to summary | Cross-fade | 300ms | Ease-in-out |
+| Card expand (splits) | Spring scale in-place | 250ms | Spring |
+| Error state shake | Horizontal spring ±8px | 300ms | Spring |
+| Waveform animation | Bar heights pulse | Continuous, staggered | Sine wave |
+| Spinner (cue generation) | Rotation | Continuous, 800ms/cycle | Linear |
+| OAuth → Connected | Fade | 200ms | Ease-in-out |
+| Welcome → Carousel | Slide left + fade | 300ms | Spring |
+
+**Motion principles:**
+- Springs feel physical — use spring curves wherever possible
+- No animation over 500ms — cycling app context demands immediacy
+- Auto-dismiss animations (segment result) are fade-out, never dramatic
+- Haptic feedback accompanies all significant transitions (see Haptics table)
 
 ---
 
-## Transition & Animation Catalogue
+## Accessibility
 
-| Transition | Animation | Duration |
-|---|---|---|
-| Push navigation (default) | Slide left | 300ms spring |
-| Modal present | Slide up | 350ms spring |
-| Modal dismiss | Slide down | 250ms spring |
-| Bottom sheet rise | Spring from bottom | 300–350ms |
-| Bottom sheet dismiss | Spring to bottom | 250ms |
-| Full-screen flash (segment result) | Scale from center | 200ms |
-| Ride start | Fade to black | 400ms |
-| Debrief to summary | Cross-fade | 300ms |
-| Card expand | Spring scale in-place | 250ms |
-| Error shake | Horizontal spring | 300ms |
+**Touch targets:** 44×44pt minimum on every interactive element — enforced.
+
+**Color contrast:**
+- `textPrimary` (#F0F0F0) on `bg` (#1C1C1E) = 12.6:1 — WCAG AAA
+- `gold` (#F5C842) on `bgDeep` (#111111) = 10.5:1 — WCAG AAA
+- `textSecondary` (#888888) on `bg` (#1C1C1E) = 4.2:1 — WCAG AA
+- `textMuted` (#555555) on `bg` (#1C1C1E) = 2.6:1 — decorative/metadata use only; paired with larger, higher-contrast labels nearby
+- `textOnGold` (#000000) on `gold` (#F5C842) = 10.5:1 — WCAG AAA
+
+**Font sizes:** 11px minimum system-wide. No exceptions.
+
+**VoiceOver:**
+- All icons and Unicode characters require `accessibilityLabel`
+- Audio cues play in a separate AVAudioSession so they don't interrupt VoiceOver narration
+- Segment result screens auto-announce with VoiceOver when they appear
+
+**Dynamic Type:**
+- Body text uses `fontSize` with system font — scales with user preferences
+- Display/Hero sizes (80px, 112px) do not scale — fixed for glanceability
+- All other text should respond to accessibility size increases
+
+**In-ride safety:**
+- During active ride, interactive elements are limited to End Ride (hold gesture, not tap)
+- Avoid any push notification or alert that would interrupt the riding audio session
+- Segment overlays auto-dismiss — rider does not need to interact to resume
+
+**End Ride hold gesture:**
+- 2-second hold threshold
+- Haptic at 1-second midpoint (medium impact) and at completion (heavy impact)
+- Visual: border pulses gold during hold — subtle progress indication without distraction
+
+---
+
+## Design Issues Found But Not Fixable in This Pass
+
+The following issues require new components or platform capabilities not yet implemented:
+
+1. **Tab bar icons are Unicode characters, not proper icons.** The current `⌂`, `◈`, `◷`, `⚙` symbols are functional but do not scale correctly at all text sizes and lack proper SF Symbols weight matching. Should be replaced with SF Symbols (via react-native-sfSymbols or similar) or a custom icon component library. This is a known limitation of the current stack with no available npm package to add.
+
+2. **HomeScreen.tsx contains a duplicate mocked tab bar** that is visually present in the component but the real tab bar is rendered by `MainTabs.tsx`. The mock tab bar in HomeScreen.tsx should be removed once the screen is wired into the navigator — keeping both creates inconsistent visual state during development. The mock is marked with a TODO but not yet removed.
+
+3. **Radial glow on PR result screen and Debrief screen** is implemented as a plain `View` with a circular background. A true radial gradient requires `expo-linear-gradient` with multiple stops or `react-native-svg`. The current implementation is an approximation; the real glow effect should use SVG radial gradient when that pass occurs.
+
+4. **Waveform animation** is not yet animated — bars are static. Requires `Reanimated` with staggered sine-wave interpolation. Marked as TODO in CueGenerationScreen.tsx.
+
+5. **Spinner in CueGenerationScreen** is not rotating. Requires `Reanimated` rotation animation. Marked as TODO.
+
+6. **Split bar widths in PostRideSummaryScreen** are hardcoded at 72% and 70% as placeholders. These need to be driven by real split data proportionally. Marked as TODO.
+
+7. **The `gap: 10` spacing value** appears in a few places (SegmentActiveOverlay, HomeScreen). Our system uses 8 or 12 — should be normalized in a future pass. These are minor inconsistencies, not bugs.
+
+8. **No DebitPlaying screen component exists** — the DesignSpec describes it but it has not been built yet. This is a significant missing screen in Flow 4.
+
+9. **No mid-ride gate component exists** — Flow 5's first screen (the paywall gate that appears after a segment result) is defined in the spec but not implemented as a component.

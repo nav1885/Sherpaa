@@ -1,5 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors } from '../constants/colors';
 
 interface RecentRide {
   id: string;
@@ -109,18 +111,6 @@ export default function HomeScreen({
           ))
         )}
       </ScrollView>
-
-      {/* Tab bar — TODO: replace with actual tab navigator */}
-      <View style={styles.tabBar}>
-        {['🏠', '⭐', '📋', '⚙️'].map((icon, i) => (
-          <View key={i} style={styles.tabItem}>
-            <Text style={styles.tabIcon}>{icon}</Text>
-            <Text style={[styles.tabLabel, i === 0 && styles.tabLabelActive]}>
-              {['Home', 'Segments', 'History', 'Settings'][i]}
-            </Text>
-          </View>
-        ))}
-      </View>
     </SafeAreaView>
   );
 }
@@ -135,7 +125,7 @@ function getTimeOfDay(): string {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.bg,
   },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 16 },
@@ -150,31 +140,31 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#F0F0F0',
+    color: colors.textPrimary,
     marginBottom: 4,
   },
   syncStatus: {
     fontSize: 13,
-    color: '#555555',
+    color: colors.textMuted,
   },
   avatar: {
     width: 36,
     height: 36,
     borderRadius: 999,
-    backgroundColor: '#F5C842',
+    backgroundColor: colors.gold,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#000000',
+    color: colors.textOnGold,
   },
   planCard: {
     marginHorizontal: 20,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#363636',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 20,
     flexDirection: 'row',
@@ -191,23 +181,23 @@ const styles = StyleSheet.create({
   planCardTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#F0F0F0',
+    color: colors.textPrimary,
     marginBottom: 4,
   },
   planCardSub: {
     fontSize: 13,
-    color: '#555555',
+    color: colors.textMuted,
     lineHeight: 18,
   },
   planCardChevron: {
     fontSize: 22,
-    color: '#F5C842',
+    color: colors.gold,
   },
   quickStartCard: {
     marginHorizontal: 20,
-    backgroundColor: 'rgba(245,200,66,0.08)',
+    backgroundColor: colors.goldDim,
     borderWidth: 1,
-    borderColor: 'rgba(245,200,66,0.2)',
+    borderColor: colors.goldBorder,
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 20,
@@ -217,17 +207,17 @@ const styles = StyleSheet.create({
   quickStartText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#F5C842',
+    color: colors.gold,
     marginBottom: 3,
   },
   quickStartSub: {
     fontSize: 12,
-    color: '#555555',
+    color: colors.textMuted,
   },
   sectionLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#444444',
+    color: colors.textDim,
     textTransform: 'uppercase',
     letterSpacing: 1.2,
     paddingHorizontal: 20,
@@ -236,7 +226,7 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     fontSize: 14,
-    color: '#444444',
+    color: colors.textDim,
     textAlign: 'center',
     paddingHorizontal: 40,
     lineHeight: 22,
@@ -244,9 +234,9 @@ const styles = StyleSheet.create({
   rideCard: {
     marginHorizontal: 20,
     marginBottom: 10,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#363636',
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 14,
   },
@@ -258,12 +248,12 @@ const styles = StyleSheet.create({
   rideTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#F0F0F0',
+    color: colors.textPrimary,
   },
   rideDate: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#444444',
+    color: colors.textDim,
   },
   rideCardStats: {
     flexDirection: 'row',
@@ -274,12 +264,12 @@ const styles = StyleSheet.create({
   rideStatVal: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#F0F0F0',
+    color: colors.textPrimary,
   },
   prTag: {
-    backgroundColor: 'rgba(245,200,66,0.1)',
+    backgroundColor: colors.goldDim,
     borderWidth: 1,
-    borderColor: 'rgba(245,200,66,0.25)',
+    borderColor: colors.goldBorder,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -287,28 +277,6 @@ const styles = StyleSheet.create({
   prTagText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#F5C842',
-  },
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
-    borderTopWidth: 1,
-    borderTopColor: '#333333',
-    height: 83,
-    paddingTop: 10,
-  },
-  tabItem: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 4,
-  },
-  tabIcon: { fontSize: 22, opacity: 0.6 },
-  tabLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#444444',
-  },
-  tabLabelActive: {
-    color: '#F5C842',
+    color: colors.gold,
   },
 });

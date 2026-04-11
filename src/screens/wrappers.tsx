@@ -150,7 +150,7 @@ export function PostRideSummaryScreenWrapper() {
       debriefText="Strong ride today — you set a new PR on Marin Ave Wall, beating your best by 4 seconds. You lost time on Grizzly in the final third. Next time, hold back 5% on the lower slopes."
       onListenDebrief={() => {}}
       onShare={() => {}}
-      onDone={() => navigation.navigate('InRide')}
+      onDone={() => navigation.getParent()?.navigate('Main')}
     />
   );
 }

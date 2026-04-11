@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { colors } from '../constants/colors';
 // TODO: import MapKit via react-native-maps or @rnmapbox/maps
 // import MapView, { Polyline, Marker } from 'react-native-maps';
 
@@ -48,8 +49,8 @@ export default function RouteSetupScreen({
       <View style={styles.mapPlaceholder}>
         <Text style={styles.mapPlaceholderText}>[ Map · Route + Segment Overlays ]</Text>
         {/* TODO: MapView with:
-          - route polyline in #F5C842
-          - segment overlays in gold (isPRTarget) or #888888
+          - route polyline in colors.gold
+          - segment overlays in gold (isPRTarget) or textSecondary
           - current location pin
           - tap to select Strava route from list
         */}
@@ -88,7 +89,7 @@ export default function RouteSetupScreen({
         <ScrollView style={styles.segmentList} scrollEnabled={false}>
           {segmentsOnRoute.map(seg => (
             <View key={seg.id} style={styles.segmentItem}>
-              <View style={[styles.segDot, { backgroundColor: seg.isPRTarget ? '#F5C842' : '#888888' }]} />
+              <View style={[styles.segDot, { backgroundColor: seg.isPRTarget ? colors.gold : colors.textSecondary }]} />
               <View style={styles.segInfo}>
                 <Text style={styles.segName}>{seg.name}</Text>
                 <Text style={styles.segMeta}>
@@ -140,14 +141,14 @@ function formatTime(seconds: number): string {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1A2030' },
+  container: { flex: 1, backgroundColor: colors.mapBg },
   mapPlaceholder: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1A2030',
+    backgroundColor: colors.mapBg,
   },
-  mapPlaceholderText: { fontSize: 13, color: '#3A4A5A' },
+  mapPlaceholderText: { fontSize: 13, color: colors.mapRoad },
   routePills: {
     position: 'absolute',
     top: 108,
@@ -165,27 +166,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(42,42,42,0.9)',
     borderWidth: 1,
-    borderColor: '#3A3A3A',
+    borderColor: colors.borderStrong,
   },
   routePillActive: {
-    backgroundColor: '#F5C842',
-    borderColor: '#F5C842',
+    backgroundColor: colors.gold,
+    borderColor: colors.gold,
   },
   routePillText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#888888',
+    color: colors.textSecondary,
   },
   routePillTextActive: {
-    color: '#000000',
+    color: colors.textOnGold,
     fontWeight: '600',
   },
   sheet: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.bg,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
-    borderTopColor: '#333333',
+    borderTopColor: colors.borderMuted,
     padding: 20,
     paddingTop: 0,
     paddingBottom: 40,
@@ -193,7 +194,7 @@ const styles = StyleSheet.create({
   sheetHandle: {
     width: 36,
     height: 4,
-    backgroundColor: '#3A3A3A',
+    backgroundColor: colors.borderStrong,
     borderRadius: 999,
     alignSelf: 'center',
     marginTop: 12,
@@ -208,13 +209,13 @@ const styles = StyleSheet.create({
   sheetTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#F0F0F0',
+    color: colors.textPrimary,
     letterSpacing: -0.3,
   },
   prBadge: {
-    backgroundColor: 'rgba(245,200,66,0.12)',
+    backgroundColor: colors.goldGlow,
     borderWidth: 1,
-    borderColor: 'rgba(245,200,66,0.25)',
+    borderColor: colors.goldBorder,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -222,16 +223,16 @@ const styles = StyleSheet.create({
   prBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#F5C842',
+    color: colors.gold,
   },
   segmentList: { marginBottom: 18 },
   segmentItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#363636',
+    borderColor: colors.border,
     borderRadius: 10,
     padding: 10,
     marginBottom: 8,
@@ -243,21 +244,21 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   segInfo: { flex: 1 },
-  segName: { fontSize: 14, fontWeight: '600', color: '#F0F0F0' },
-  segMeta: { fontSize: 12, color: '#555555', marginTop: 1 },
+  segName: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
+  segMeta: { fontSize: 12, color: colors.textMuted, marginTop: 1 },
   prTag: {
-    backgroundColor: 'rgba(245,200,66,0.1)',
+    backgroundColor: colors.goldDim,
     borderWidth: 1,
-    borderColor: 'rgba(245,200,66,0.2)',
+    borderColor: colors.goldBorder,
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  prTagText: { fontSize: 11, fontWeight: '600', color: '#F5C842' },
+  prTagText: { fontSize: 11, fontWeight: '600', color: colors.gold },
   goalLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#555555',
+    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 10,
@@ -273,26 +274,26 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2A2A2A',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#363636',
+    borderColor: colors.border,
   },
   goalChipSelected: {
-    backgroundColor: '#F5C842',
-    borderColor: '#F5C842',
+    backgroundColor: colors.gold,
+    borderColor: colors.gold,
   },
   goalChipText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#666666',
+    color: colors.textSecondary,
   },
   goalChipTextSelected: {
-    color: '#000000',
+    color: colors.textOnGold,
   },
   btnGold: {
     width: '100%',
     height: 54,
-    backgroundColor: '#F5C842',
+    backgroundColor: colors.gold,
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
@@ -300,7 +301,7 @@ const styles = StyleSheet.create({
   btnGoldText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.textOnGold,
     letterSpacing: -0.2,
   },
 });

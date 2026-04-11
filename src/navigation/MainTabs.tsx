@@ -36,13 +36,14 @@ export default function MainTabs() {
         tabBarInactiveTintColor: colors.textDim,
         tabBarStyle: {
           backgroundColor: colors.bg,
-          borderTopColor: colors.border,
+          borderTopColor: colors.borderMuted,
           borderTopWidth: 1,
-          paddingBottom: 8,
-          height: 60,
+          paddingBottom: 20,
+          paddingTop: 10,
+          height: 83,
         },
         tabBarLabelStyle: {
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: '600',
         },
       })}

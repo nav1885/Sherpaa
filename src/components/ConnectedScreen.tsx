@@ -1,5 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors } from '../constants/colors';
 
 type StatusLine = {
   label: string;
@@ -15,17 +17,17 @@ interface Props {
 }
 
 const STATUS_COLOR = {
-  success: '#30A46C',
-  loading: '#555555',
-  error: '#E5484D',
-  warning: '#F5C842',
+  success: colors.success,
+  loading: colors.textMuted,
+  error: colors.error,
+  warning: colors.gold,
 };
 
 const STATUS_DOT = {
-  success: '#30A46C',
-  loading: '#2A2A2A',
-  error: '#E5484D',
-  warning: '#F5C842',
+  success: colors.success,
+  loading: colors.surface,
+  error: colors.error,
+  warning: colors.gold,
 };
 
 export default function ConnectedScreen({ athleteName, locationGranted, statusLines, onContinue, onEnableLocation }: Props) {
@@ -84,7 +86,7 @@ export default function ConnectedScreen({ athleteName, locationGranted, statusLi
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.bg,
   },
   content: {
     flex: 1,
@@ -101,14 +103,14 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 999,
-    backgroundColor: '#F5C842',
+    backgroundColor: colors.gold,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#000000',
+    color: colors.textOnGold,
   },
   stravaBadge: {
     position: 'absolute',
@@ -117,34 +119,34 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 999,
-    backgroundColor: '#FC4C02',
+    backgroundColor: colors.stravaOrange,
     borderWidth: 2,
-    borderColor: '#1C1C1E',
+    borderColor: colors.bg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stravaBadgeText: {
     fontSize: 10,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: colors.white,
     fontStyle: 'italic',
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#F0F0F0',
+    color: colors.textPrimary,
     letterSpacing: -0.4,
   },
   subtitle: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#555555',
+    color: colors.textMuted,
   },
   statusCard: {
     width: '100%',
-    backgroundColor: '#2A2A2A',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#363636',
+    borderColor: colors.border,
     borderRadius: 10,
     padding: 16,
     gap: 14,
@@ -165,26 +167,26 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   locationWarning: {
-    backgroundColor: 'rgba(245,200,66,0.08)',
+    backgroundColor: colors.goldDim,
     borderWidth: 1,
-    borderColor: 'rgba(245,200,66,0.2)',
+    borderColor: colors.goldBorder,
     borderRadius: 10,
     padding: 12,
     width: '100%',
   },
   locationWarningText: {
     fontSize: 13,
-    color: '#888888',
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   locationWarningLink: {
-    color: '#F5C842',
+    color: colors.gold,
     fontWeight: '600',
   },
   btnGold: {
     width: '100%',
-    height: 52,
-    backgroundColor: '#F5C842',
+    height: 56,
+    backgroundColor: colors.gold,
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
@@ -193,6 +195,6 @@ const styles = StyleSheet.create({
   btnGoldText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.textOnGold,
   },
 });
