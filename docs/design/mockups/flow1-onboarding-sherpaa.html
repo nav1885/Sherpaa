@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sherpaa — Flow 1: Onboarding + Strava Connect</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+    background: #1A1A1A;
+    padding: 40px 32px;
+    min-height: 100vh;
+  }
+
+  h1 { color: #F0F0F0; font-size: 18px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.3px; }
+  .subtitle { color: #444444; font-size: 13px; margin-bottom: 48px; }
+
+  .flow {
+    display: flex;
+    gap: 24px;
+    overflow-x: auto;
+    padding-bottom: 40px;
+    align-items: flex-start;
+  }
+
+  .screen-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .screen-label {
+    color: #444444;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    text-align: center;
+  }
+
+  /* iPhone frame */
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: #1C1C1E;
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid #333333;
+    box-shadow: 0 32px 64px rgba(0,0,0,0.5), 0 0 0 1px #2A2A2A;
+    flex-shrink: 0;
+  }
+
+  .notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 34px;
+    background: #000;
+    border-radius: 0 0 20px 20px;
+    z-index: 20;
+  }
+
+  .home-indicator {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 134px;
+    height: 5px;
+    background: #F5C842;
+    border-radius: 999px;
+    opacity: 0.3;
+    z-index: 20;
+  }
+
+  /* Status bar */
+  .status-bar {
+    height: 54px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 24px 8px;
+    position: relative;
+    z-index: 10;
+    color: #F0F0F0;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  /* Buttons */
+  .btn-gold {
+    width: 100%;
+    height: 52px;
+    background: #F5C842;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    font-weight: 600;
+    color: #000000;
+    cursor: pointer;
+    gap: 8px;
+  }
+
+  .btn-outline {
+    width: 100%;
+    height: 52px;
+    background: transparent;
+    border: 1px solid #3A3A3A;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    font-weight: 600;
+    color: #F0F0F0;
+    cursor: pointer;
+    gap: 8px;
+  }
+
+  .btn-ghost {
+    font-size: 15px;
+    font-weight: 500;
+    color: rgba(240,240,240,0.5);
+    text-align: center;
+    cursor: pointer;
+  }
+
+  /* ===================== SCREEN 1: WELCOME ===================== */
+  .screen-welcome {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #1C1C1E;
+  }
+
+  .hero-img {
+    position: absolute;
+    inset: 0;
+    background: #D0D0D0;
+    overflow: hidden;
+  }
+
+  .hero-img img {
+    width: 105%;
+    height: auto;
+    position: absolute;
+    top: 30px;
+    left: -2%;
+    mix-blend-mode: multiply;
+    filter: contrast(1.1) saturate(1.2) brightness(1.0);
+  }
+
+  .gradient-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      rgba(28,28,30,1) 0%,
+      rgba(28,28,30,0.92) 20%,
+      rgba(28,28,30,0.2) 45%,
+      rgba(28,28,30,0.0) 60%,
+      rgba(28,28,30,0.1) 100%
+    );
+  }
+
+  .welcome-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0 24px 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 5;
+  }
+
+  .welcome-logo {
+    font-size: 32px;
+    font-weight: 700;
+    color: #F5C842;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .welcome-logo-img {
+    height: 44px;
+    width: auto;
+    margin-bottom: 8px;
+    object-fit: contain;
+  }
+
+  .welcome-tagline {
+    font-size: 14px;
+    font-weight: 400;
+    color: rgba(240,240,240,0.75);
+    text-align: center;
+    white-space: nowrap;
+    margin-bottom: 40px;
+  }
+
+  /* ===================== CAROUSEL ===================== */
+  .screen-carousel {
+    background: #1C1C1E;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .carousel-skip {
+    text-align: right;
+    padding: 16px 20px 0;
+    font-size: 15px;
+    font-weight: 500;
+    color: #555555;
+    cursor: pointer;
+  }
+
+  .carousel-illus {
+    width: 260px;
+    height: 210px;
+    margin: 48px auto 32px;
+    background: #2A2A2A;
+    border: 1px solid #333333;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .wave-bar {
+    width: 4px;
+    background: #F5C842;
+    border-radius: 2px;
+  }
+
+  .carousel-headline {
+    font-size: 26px;
+    font-weight: 700;
+    color: #F0F0F0;
+    text-align: center;
+    max-width: 290px;
+    margin: 0 auto 12px;
+    line-height: 32px;
+    padding: 0 20px;
+    letter-spacing: -0.5px;
+  }
+
+  .carousel-body {
+    font-size: 15px;
+    font-weight: 400;
+    color: #666666;
+    text-align: center;
+    max-width: 280px;
+    margin: 0 auto;
+    line-height: 24px;
+    padding: 0 20px;
+  }
+
+  .carousel-footer {
+    margin-top: auto;
+    padding: 0 24px 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .dots { display: flex; gap: 8px; align-items: center; }
+  .dot { border-radius: 999px; background: #444444; width: 6px; height: 6px; }
+  .dot.active { background: #F5C842; width: 8px; height: 8px; }
+
+  /* ===================== ERROR ===================== */
+  .screen-dark {
+    background: #1C1C1E;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+
+  /* ===================== HOME ===================== */
+  .screen-home {
+    background: #1C1C1E;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .home-header {
+    padding: 16px 20px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .home-greeting {
+    font-size: 20px;
+    font-weight: 600;
+    color: #F0F0F0;
+    margin-bottom: 4px;
+  }
+
+  .home-sync {
+    font-size: 13px;
+    color: #555555;
+  }
+
+  .home-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    background: #F5C842;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #000000;
+  }
+
+  .plan-card {
+    margin: 20px 20px 0;
+    background: #2A2A2A;
+    border: 1px solid #363636;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+  }
+
+  .plan-card-title { font-size: 18px; font-weight: 700; color: #F0F0F0; margin-bottom: 4px; }
+  .plan-card-sub { font-size: 13px; color: #555555; line-height: 18px; }
+  .plan-card-chevron { font-size: 20px; color: #F5C842; flex-shrink: 0; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #444444;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    padding: 28px 20px 12px;
+  }
+
+  /* Tab bar */
+  .tab-bar {
+    margin-top: auto;
+    background: #1C1C1E;
+    border-top: 1px solid #333333;
+    height: 83px;
+    display: flex;
+    align-items: flex-start;
+    padding-top: 10px;
+  }
+
+  .tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+  .tab-icon { font-size: 22px; }
+  .tab-label { font-size: 11px; font-weight: 500; }
+  .tab-item.active .tab-label { color: #F5C842; }
+  .tab-item.active .tab-icon { filter: none; }
+  .tab-item.inactive .tab-label { color: #444444; }
+  .tab-item.inactive .tab-icon { opacity: 0.35; }
+
+  /* Connected screen */
+  .avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 999px;
+    background: #F5C842;
+    border: 2px solid #F5C842;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: 700;
+    color: #000000;
+  }
+
+  .strava-badge {
+    position: absolute;
+    bottom: 0;
+    right: -2px;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: #FC4C02;
+    border: 2px solid #000000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 900;
+    font-style: italic;
+    color: #FFFFFF;
+    font-family: Arial, sans-serif;
+  }
+
+  .status-card {
+    background: #2A2A2A;
+    border: 1px solid #363636;
+    border-radius: 10px;
+    padding: 16px;
+    margin: 0 24px;
+    width: calc(100% - 48px);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .status-line { display: flex; align-items: center; gap: 10px; font-size: 15px; }
+  .status-line.success { color: #30A46C; font-weight: 500; }
+  .status-line.loading { color: #555555; font-weight: 400; }
+  .status-line.error { color: #E5484D; font-weight: 500; }
+
+  .status-dot { width: 8px; height: 8px; border-radius: 999px; flex-shrink: 0; }
+  .status-dot.green { background: #30A46C; }
+  .status-dot.grey { background: #2A2A2A; }
+  .status-dot.red { background: #E5484D; }
+
+  /* Ride cards */
+  .ride-card {
+    margin: 0 20px 10px;
+    background: #2A2A2A;
+    border: 1px solid #363636;
+    border-radius: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+  }
+
+  .ride-title { font-size: 15px; font-weight: 600; color: #F0F0F0; }
+  .ride-date { font-size: 11px; font-weight: 500; color: #444444; }
+  .ride-stat-label { font-size: 10px; color: #444444; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .ride-stat-val { font-size: 15px; font-weight: 600; color: #F0F0F0; }
+
+  .segment-tag {
+    background: #333333;
+    border: 1px solid #444444;
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #555555;
+  }
+
+  .segment-tag.pr {
+    background: rgba(245,200,66,0.1);
+    border-color: rgba(245,200,66,0.25);
+    color: #F5C842;
+    font-weight: 600;
+  }
+
+  /* Trust card */
+  .trust-card {
+    background: #2A2A2A;
+    border: 1px solid #363636;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .divider { height: 1px; background: #333333; margin: 0 20px; }
+</style>
+</head>
+<body>
+
+<h1>Sherpaa — Flow 1: Onboarding + Strava Connect</h1>
+<p class="subtitle">Option 5 · True Black + Gold · 10 screens</p>
+
+<div class="flow">
+
+  <!-- SCREEN 1: WELCOME -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen-welcome">
+        <div class="hero-img">
+          <img src="hero-mtb.png" alt="Mountain biker"/>
+        </div>
+        <div class="gradient-overlay"></div>
+        <div class="status-bar" style="position:relative;z-index:5;">
+          <span>9:41</span><span>●●● 🔋</span>
+        </div>
+        <div class="welcome-content">
+          <div class="welcome-logo">Sherpaa</div>
+          <div class="welcome-tagline">The only coach who was there last time.</div>
+          <div class="btn-gold" style="margin-bottom:14px;">Get Started</div>
+          <div class="btn-ghost">I already have an account</div>
+        </div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="screen-label">1. Welcome</div>
+  </div>
+
+  <!-- SCREEN 2: CAROUSEL 1 -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen-carousel">
+        <div class="status-bar"><span>9:41</span><span>●●● 🔋</span></div>
+        <div class="carousel-skip">Skip</div>
+        <div class="carousel-illus">
+          <svg width="120" height="56" viewBox="0 0 120 56">
+            <polyline points="0,52 25,36 50,42 72,14 92,24 120,6" fill="none" stroke="#2A2A2A" stroke-width="2.5" stroke-linejoin="round"/>
+            <circle cx="72" cy="14" r="5" fill="#F5C842"/>
+            <circle cx="72" cy="14" r="9" fill="rgba(245,200,66,0.15)"/>
+          </svg>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <div class="wave-bar" style="height:10px"></div>
+            <div class="wave-bar" style="height:22px"></div>
+            <div class="wave-bar" style="height:30px"></div>
+            <div class="wave-bar" style="height:18px"></div>
+            <div class="wave-bar" style="height:26px"></div>
+            <div class="wave-bar" style="height:14px"></div>
+            <div class="wave-bar" style="height:22px"></div>
+            <div class="wave-bar" style="height:10px"></div>
+          </div>
+        </div>
+        <div class="carousel-headline">Your coach knows<br>this climb.</div>
+        <div class="carousel-body">Pre-generated, personalized coaching cues for every Strava segment you care about.</div>
+        <div class="carousel-footer">
+          <div class="dots">
+            <div class="dot active"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+          </div>
+          <div class="btn-outline" style="width:100%;">Next →</div>
+        </div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="screen-label">2. Carousel — Card 1</div>
+  </div>
+
+  <!-- SCREEN 3: CAROUSEL 2 -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen-carousel">
+        <div class="status-bar"><span>9:41</span><span>●●● 🔋</span></div>
+        <div class="carousel-skip">Skip</div>
+        <div class="carousel-illus">
+          <div style="font-size:56px;">🎧</div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <div style="width:6px;height:6px;border-radius:50%;background:#F5C842;opacity:0.3"></div>
+            <div style="width:8px;height:8px;border-radius:50%;background:#F5C842;opacity:0.5"></div>
+            <div style="width:10px;height:10px;border-radius:50%;background:#F5C842;opacity:0.75"></div>
+            <div style="width:12px;height:12px;border-radius:50%;background:#F5C842"></div>
+            <div style="width:10px;height:10px;border-radius:50%;background:#F5C842;opacity:0.75"></div>
+            <div style="width:8px;height:8px;border-radius:50%;background:#F5C842;opacity:0.5"></div>
+            <div style="width:6px;height:6px;border-radius:50%;background:#F5C842;opacity:0.3"></div>
+          </div>
+        </div>
+        <div class="carousel-headline">In your ear.<br>Not on your screen.</div>
+        <div class="carousel-body">Voice coaching that fires at the right moment — no glancing at your phone, no head unit required.</div>
+        <div class="carousel-footer">
+          <div class="dots">
+            <div class="dot"></div>
+            <div class="dot active"></div>
+            <div class="dot"></div>
+          </div>
+          <div class="btn-outline" style="width:100%;">Next →</div>
+        </div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="screen-label">3. Carousel — Card 2</div>
+  </div>
+
+  <!-- SCREEN 4: CAROUSEL 3 -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen-carousel">
+        <div class="status-bar"><span>9:41</span><span>●●● 🔋</span></div>
+        <div class="carousel-skip">Skip</div>
+        <div class="carousel-illus">
+          <svg width="150" height="80" viewBox="0 0 150 80">
+            <polyline points="10,72 35,58 60,52 82,38 105,26 128,12" fill="none" stroke="#2A2A2A" stroke-width="2" stroke-linejoin="round"/>
+            <circle cx="10" cy="72" r="3.5" fill="#333333"/>
+            <circle cx="35" cy="58" r="3.5" fill="#333333"/>
+            <circle cx="60" cy="52" r="3.5" fill="#333333"/>
+            <circle cx="82" cy="38" r="3.5" fill="#333333"/>
+            <circle cx="105" cy="26" r="3.5" fill="#333333"/>
+            <circle cx="128" cy="12" r="6" fill="#F5C842"/>
+            <circle cx="128" cy="12" r="11" fill="rgba(245,200,66,0.12)"/>
+            <text x="128" y="2" font-size="12" text-anchor="middle" fill="#F5C842">👑</text>
+          </svg>
+        </div>
+        <div class="carousel-headline">Gets smarter<br>every ride.</div>
+        <div class="carousel-body">Your pacing model learns your tendencies on each segment and refines coaching after every effort.</div>
+        <div class="carousel-footer">
+          <div class="dots">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot active"></div>
+          </div>
+          <div class="btn-gold" style="width:100%;">Connect Strava</div>
+        </div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="screen-label">4. Carousel — Card 3</div>
+  </div>
+
+  <!-- SCREEN 5: OAUTH ERROR -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen-dark">
+        <div class="status-bar" style="width:100%;"><span>9:41</span><span>●●● 🔋</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:0 24px;">
+          <div style="width:64px;height:64px;background:#111111;border:1px solid #1E1E1E;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:24px;">🔗</div>
+          <div style="font-size:24px;font-weight:700;color:#F0F0F0;text-align:center;margin-bottom:12px;letter-spacing:-0.3px;">Couldn't connect<br>to Strava</div>
+          <div style="font-size:15px;color:#555555;text-align:center;line-height:22px;max-width:280px;">TrailVoice needs Strava access to find your segments and coaching history. Without it, the app can't function.</div>
+        </div>
+        <div style="padding:0 24px 48px;width:100%;display:flex;flex-direction:column;align-items:center;gap:16px;">
+          <div class="btn-gold" style="width:100%;">Try Again</div>
+          <div style="font-size:15px;font-weight:500;color:#555555;text-decoration:underline;cursor:pointer;">Contact Support</div>
+        </div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="screen-label">5. OAuth Error</div>
+  </div>
+
+  <!-- SCREEN 6: LOCATION RATIONALE -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen-dark">
+        <div class="status-bar" style="width:100%;"><span>9:41</span><span>●●● 🔋</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;margin-top:80px;padding:0 24px;">
+          <div style="width:72px;height:72px;background:#111111;border:1px solid #1E1E1E;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:24px;">📍</div>
+          <div style="font-size:24px;font-weight:700;color:#F0F0F0;text-align:center;max-width:260px;line-height:30px;margin-bottom:12px;letter-spacing:-0.3px;">Sherpaa needs to<br>know where you are</div>
+          <div style="font-size:15px;color:#555555;text-align:center;max-width:280px;line-height:22px;margin-bottom:24px;">To detect when you enter a Strava segment, Sherpaa tracks your location while the app is in use.</div>
+          <div class="trust-card" style="width:100%;margin:0;">
+            <div style="font-size:16px;color:#30A46C;flex-shrink:0;">🛡️</div>
+            <div style="font-size:13px;font-weight:500;color:#888888;line-height:18px;">Your location is never sold or shared.</div>
+          </div>
+        </div>
+        <div style="margin-top:auto;padding:0 24px 48px;width:100%;display:flex;flex-direction:column;align-items:center;gap:16px;">
+          <div style="font-size:13px;font-weight:500;color:#F5C842;cursor:pointer;">Why does this matter?</div>
+          <div class="btn-gold" style="width:100%;">Continue</div>
+        </div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="screen-label">6. Location Rationale</div>
+  </div>
+
+  <!-- SCREEN 7: CONNECTED -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen-dark">
+        <div class="status-bar" style="width:100%;"><span>9:41</span><span>●●● 🔋</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;margin-top:80px;">
+          <div style="position:relative;width:72px;height:72px;margin-bottom:16px;">
+            <div class="avatar">CR</div>
+            <div class="strava-badge">S</div>
+          </div>
+          <div style="font-size:13px;font-weight:500;color:#555555;margin-bottom:4px;">Connected as</div>
+          <div style="font-size:20px;font-weight:700;color:#F0F0F0;margin-bottom:32px;">Carlos Ruiz</div>
+          <div class="status-card">
+            <div class="status-line success"><div class="status-dot green"></div>Strava connected</div>
+            <div class="status-line success"><div class="status-dot green"></div>12 segments loaded</div>
+            <div class="status-line success"><div class="status-dot green"></div>Location enabled</div>
+          </div>
+        </div>
+        <div style="margin-top:auto;padding:0 24px 48px;width:100%;">
+          <div class="btn-gold" style="width:100%;">Go to Dashboard →</div>
+        </div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="screen-label">7. Connected ✓</div>
+  </div>
+
+  <!-- SCREEN 7B: CONNECTED — LOCATION DENIED -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen-dark">
+        <div class="status-bar" style="width:100%;"><span>9:41</span><span>●●● 🔋</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;margin-top:80px;">
+          <div style="position:relative;width:72px;height:72px;margin-bottom:16px;">
+            <div class="avatar">CR</div>
+            <div class="strava-badge">S</div>
+          </div>
+          <div style="font-size:13px;font-weight:500;color:#555555;margin-bottom:4px;">Connected as</div>
+          <div style="font-size:20px;font-weight:700;color:#F0F0F0;margin-bottom:32px;">Carlos Ruiz</div>
+          <div class="status-card">
+            <div class="status-line success"><div class="status-dot green"></div>Strava connected</div>
+            <div class="status-line success"><div class="status-dot green"></div>12 segments loaded</div>
+            <div class="status-line error" style="flex-direction:column;align-items:flex-start;gap:6px;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="status-dot red"></div>Location off — required for coaching
+              </div>
+              <div style="padding-left:18px;font-size:13px;font-weight:500;color:#F5C842;text-decoration:underline;cursor:pointer;">Open Settings →</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:auto;padding:0 24px 48px;width:100%;">
+          <div class="btn-gold" style="width:100%;">Go to Dashboard →</div>
+        </div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="screen-label">7b. Connected — Location Denied</div>
+  </div>
+
+  <!-- SCREEN 8: HOME EMPTY -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen-home">
+        <div class="status-bar"><span>9:41</span><span>●●● 🔋</span></div>
+        <div class="home-header">
+          <div>
+            <div class="home-greeting">Good morning, Carlos.</div>
+            <div class="home-sync">🔄 12 segments · Last synced just now</div>
+          </div>
+          <div class="home-avatar">CR</div>
+        </div>
+        <div class="plan-card">
+          <div style="font-size:28px;">🚴</div>
+          <div style="flex:1;">
+            <div class="plan-card-title">Plan Ride</div>
+            <div class="plan-card-sub">Generate your coaching cues before you go.</div>
+          </div>
+          <div class="plan-card-chevron">›</div>
+        </div>
+        <div class="section-label">Recent Rides</div>
+        <div style="margin:0 20px;background:#111111;border:1px solid #1E1E1E;border-radius:12px;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <div style="font-size:32px;opacity:0.2;">🗺️</div>
+          <div style="font-size:15px;font-weight:500;color:#F0F0F0;">No rides yet</div>
+          <div style="font-size:13px;color:#444444;text-align:center;">Plan your first ride to get started.</div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item active"><div class="tab-icon">🏠</div><div class="tab-label" style="color:#F5C842;">Home</div></div>
+          <div class="tab-item inactive"><div class="tab-icon">⚡</div><div class="tab-label">Segments</div></div>
+          <div class="tab-item inactive"><div class="tab-icon">🕐</div><div class="tab-label">History</div></div>
+          <div class="tab-item inactive"><div class="tab-icon">⚙️</div><div class="tab-label">Settings</div></div>
+        </div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="screen-label">8. Home — Empty State</div>
+  </div>
+
+  <!-- SCREEN 9: HOME WITH RIDES -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen-home">
+        <div class="status-bar"><span>9:41</span><span>●●● 🔋</span></div>
+        <div class="home-header">
+          <div>
+            <div class="home-greeting">Good morning, Carlos.</div>
+            <div class="home-sync">🔄 12 segments · Last synced 2h ago</div>
+          </div>
+          <div class="home-avatar">CR</div>
+        </div>
+        <div class="plan-card">
+          <div style="font-size:28px;">🚴</div>
+          <div style="flex:1;">
+            <div class="plan-card-title">Plan Ride</div>
+            <div class="plan-card-sub">Generate your coaching cues before you go.</div>
+          </div>
+          <div class="plan-card-chevron">›</div>
+        </div>
+        <div class="section-label">Recent Rides</div>
+
+        <!-- Ride 1 -->
+        <div class="ride-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div class="ride-title">Hawk Hill Loop</div>
+            <div class="ride-date">Today · 6:42am</div>
+          </div>
+          <div style="display:flex;gap:20px;margin-bottom:10px;">
+            <div><div class="ride-stat-label">Distance</div><div class="ride-stat-val">24.3 mi</div></div>
+            <div><div class="ride-stat-label">Time</div><div class="ride-stat-val">1h 28m</div></div>
+            <div><div class="ride-stat-label">Elevation</div><div class="ride-stat-val">1,840 ft</div></div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <div class="segment-tag pr">👑 Hawk Hill PR · 4:08</div>
+            <div class="segment-tag">Conzelman · 2:34</div>
+          </div>
+        </div>
+
+        <!-- Ride 2 -->
+        <div class="ride-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div class="ride-title">Paradise Loop</div>
+            <div class="ride-date">Yesterday · 7:15am</div>
+          </div>
+          <div style="display:flex;gap:20px;margin-bottom:10px;">
+            <div><div class="ride-stat-label">Distance</div><div class="ride-stat-val">18.7 mi</div></div>
+            <div><div class="ride-stat-label">Time</div><div class="ride-stat-val">1h 06m</div></div>
+            <div><div class="ride-stat-label">Elevation</div><div class="ride-stat-val">980 ft</div></div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <div class="segment-tag">Camino Alto · 3:21</div>
+            <div class="segment-tag">Paradise Descent · 1:47</div>
+          </div>
+        </div>
+
+        <!-- Ride 3 -->
+        <div class="ride-card" style="opacity:0.6;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div class="ride-title">Mt. Tam — East Peak</div>
+            <div class="ride-date">Sat · 8:00am</div>
+          </div>
+          <div style="display:flex;gap:20px;margin-bottom:10px;">
+            <div><div class="ride-stat-label">Distance</div><div class="ride-stat-val">31.1 mi</div></div>
+            <div><div class="ride-stat-label">Time</div><div class="ride-stat-val">2h 14m</div></div>
+            <div><div class="ride-stat-label">Elevation</div><div class="ride-stat-val">3,420 ft</div></div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <div class="segment-tag pr">👑 Eldridge Grade PR · 18:44</div>
+          </div>
+        </div>
+
+        <div class="tab-bar">
+          <div class="tab-item active"><div class="tab-icon">🏠</div><div class="tab-label" style="color:#F5C842;">Home</div></div>
+          <div class="tab-item inactive"><div class="tab-icon">⚡</div><div class="tab-label">Segments</div></div>
+          <div class="tab-item inactive"><div class="tab-icon">🕐</div><div class="tab-label">History</div></div>
+          <div class="tab-item inactive"><div class="tab-icon">⚙️</div><div class="tab-label">Settings</div></div>
+        </div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="screen-label">9. Home — With Rides</div>
+  </div>
+
+</div>
+</body>
+</html>

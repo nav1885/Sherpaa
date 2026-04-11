@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sherpaa — Flow 4: Post-Ride Debrief</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+    background: #1A1A1A;
+    padding: 40px 32px;
+    min-height: 100vh;
+  }
+
+  h1 { color: #F0F0F0; font-size: 18px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.3px; }
+  .subtitle { color: #444444; font-size: 13px; margin-bottom: 48px; }
+
+  .flow {
+    display: flex;
+    gap: 32px;
+    overflow-x: auto;
+    padding-bottom: 40px;
+    align-items: flex-start;
+  }
+
+  .screen-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .screen-label {
+    color: #555555;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    text-align: center;
+  }
+
+  /* iPhone frame */
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: #1C1C1E;
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid #333333;
+    box-shadow: 0 32px 64px rgba(0,0,0,0.5), 0 0 0 1px #2A2A2A;
+    flex-shrink: 0;
+  }
+
+  .notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 34px;
+    background: #000;
+    border-radius: 0 0 20px 20px;
+    z-index: 30;
+  }
+
+  .home-indicator {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 134px;
+    height: 5px;
+    background: #F5C842;
+    border-radius: 999px;
+    opacity: 0.3;
+    z-index: 30;
+  }
+
+  .status-bar {
+    height: 54px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 24px 8px;
+    color: #F0F0F0;
+    font-size: 13px;
+    font-weight: 600;
+    position: relative;
+    z-index: 10;
+  }
+
+  /* ===================== SCREEN: DEBRIEF PLAYING ===================== */
+
+  .screen-debrief {
+    background: #111111;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .debrief-glow {
+    position: absolute;
+    width: 280px;
+    height: 280px;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(245,200,66,0.08) 0%, rgba(245,200,66,0) 70%);
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .debrief-icon-wrap {
+    width: 72px;
+    height: 72px;
+    border-radius: 999px;
+    background: rgba(245,200,66,0.1);
+    border: 1px solid rgba(245,200,66,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 60px auto 24px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .debrief-wave {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 32px;
+  }
+
+  .debrief-bar {
+    width: 4px;
+    background: #F5C842;
+    border-radius: 2px;
+  }
+
+  .debrief-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #F0F0F0;
+    letter-spacing: -0.4px;
+    margin-bottom: 6px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .debrief-sub {
+    font-size: 14px;
+    color: #555555;
+    margin-bottom: 40px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .debrief-quote {
+    background: #1E1E1E;
+    border: 1px solid #2A2A2A;
+    border-radius: 16px;
+    padding: 20px;
+    margin: 0 24px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .debrief-quote-text {
+    font-size: 15px;
+    color: rgba(240,240,240,0.75);
+    line-height: 24px;
+    font-style: italic;
+  }
+
+  .debrief-quote-text strong { color: #F5C842; font-style: normal; }
+
+  .debrief-stat-row {
+    display: flex;
+    gap: 12px;
+    margin: 24px 24px 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  .debrief-stat-card {
+    flex: 1;
+    background: #1E1E1E;
+    border: 1px solid #2A2A2A;
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+  }
+
+  .debrief-stat-val {
+    font-size: 22px;
+    font-weight: 700;
+    color: #F0F0F0;
+    letter-spacing: -0.5px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .debrief-stat-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: #444444;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 3px;
+  }
+
+  /* ===================== SCREEN: POST-RIDE SUMMARY ===================== */
+
+  .screen-summary {
+    background: #1C1C1E;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Map strip at top */
+  .summary-map {
+    height: 200px;
+    background: #1A2030;
+    position: relative;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .summary-map-gradient {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: linear-gradient(to bottom, rgba(28,28,30,0) 0%, rgba(28,28,30,1) 100%);
+    z-index: 5;
+  }
+
+  .summary-nav {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100px;
+    background: linear-gradient(to bottom, rgba(28,28,30,0.9) 0%, rgba(28,28,30,0) 100%);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 20px 12px;
+    z-index: 10;
+  }
+
+  .summary-share-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    background: rgba(42,42,42,0.9);
+    border: 1px solid #3A3A3A;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #F0F0F0;
+  }
+
+  .summary-title-area {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Scrollable content */
+  .summary-scroll {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 0 0 0 0;
+  }
+
+  /* PR headline */
+  .pr-headline {
+    padding: 16px 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .pr-crown-badge {
+    background: #F5C842;
+    color: #000000;
+    font-size: 12px;
+    font-weight: 800;
+    border-radius: 999px;
+    padding: 4px 12px;
+    letter-spacing: 0.3px;
+  }
+
+  .pr-headline-text {
+    font-size: 14px;
+    color: #888888;
+    font-weight: 500;
+  }
+
+  /* Overall stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    padding: 14px 20px 0;
+  }
+
+  .stat-card {
+    background: #2A2A2A;
+    border: 1px solid #363636;
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+
+  .stat-val {
+    font-size: 22px;
+    font-weight: 700;
+    color: #F0F0F0;
+    letter-spacing: -0.5px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #444444;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 3px;
+  }
+
+  /* Strava sync banner */
+  .sync-banner {
+    margin: 12px 20px 0;
+    background: rgba(48,164,108,0.08);
+    border: 1px solid rgba(48,164,108,0.2);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #30A46C;
+  }
+
+  /* Section label */
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #444444;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    padding: 18px 20px 10px;
+  }
+
+  /* Segment result cards */
+  .seg-result-card {
+    margin: 0 20px 8px;
+    background: #2A2A2A;
+    border: 1px solid #363636;
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+
+  .seg-result-card.pr-card {
+    border-color: rgba(245,200,66,0.3);
+    background: rgba(245,200,66,0.05);
+  }
+
+  .seg-result-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .seg-result-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #F0F0F0;
+  }
+
+  .seg-result-time {
+    font-size: 15px;
+    font-weight: 700;
+    color: #F0F0F0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .seg-result-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .seg-result-note {
+    font-size: 12px;
+    color: #555555;
+  }
+
+  .seg-pr-tag {
+    font-size: 11px;
+    font-weight: 700;
+    color: #F5C842;
+    background: rgba(245,200,66,0.1);
+    border: 1px solid rgba(245,200,66,0.2);
+    border-radius: 999px;
+    padding: 2px 8px;
+  }
+
+  .seg-off-tag {
+    font-size: 11px;
+    font-weight: 600;
+    color: #555555;
+    background: #242424;
+    border: 1px solid #333333;
+    border-radius: 999px;
+    padding: 2px 8px;
+  }
+
+  /* Listen again + footer */
+  .listen-btn {
+    margin: 12px 20px 0;
+    background: #2A2A2A;
+    border: 1px solid #363636;
+    border-radius: 999px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #F5C842;
+  }
+
+  .done-btn {
+    margin: 10px 20px 40px;
+    background: #F5C842;
+    border-radius: 999px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    font-weight: 600;
+    color: #000000;
+  }
+
+  /* ===================== SCREEN: SUMMARY + EXPANDED SEGMENT ===================== */
+
+  .seg-expanded-card {
+    margin: 0 20px 8px;
+    background: #2A2A2A;
+    border: 1px solid rgba(245,200,66,0.3);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .seg-expanded-header {
+    padding: 14px 16px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .seg-splits-area {
+    border-top: 1px solid #333333;
+    padding: 14px 16px;
+    background: rgba(0,0,0,0.15);
+  }
+
+  .splits-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #444444;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+
+  .split-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 10px;
+  }
+
+  .split-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #555555;
+    width: 36px;
+    flex-shrink: 0;
+  }
+
+  .split-bar-track {
+    flex: 1;
+    height: 6px;
+    background: #222222;
+    border-radius: 999px;
+    overflow: visible;
+    position: relative;
+  }
+
+  .split-bar-pr {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 6px;
+    background: #444444;
+    border-radius: 999px;
+  }
+
+  .split-bar-today {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 6px;
+    background: #F5C842;
+    border-radius: 999px;
+  }
+
+  .split-val {
+    font-size: 12px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    width: 36px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .cue-review {
+    margin-top: 12px;
+    background: rgba(245,200,66,0.06);
+    border: 1px solid rgba(245,200,66,0.15);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: rgba(240,240,240,0.6);
+    font-style: italic;
+    line-height: 18px;
+  }
+
+  .cue-review-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #F5C842;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 5px;
+    font-style: normal;
+  }
+</style>
+</head>
+<body>
+
+<h1>Sherpaa — Flow 4: Post-Ride Debrief</h1>
+<p class="subtitle">3 screens · Triggered by End Ride hold · Spoken debrief → summary → home</p>
+
+<div class="flow">
+
+  <!-- =================== SCREEN: DEBRIEF PLAYING =================== -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen-debrief">
+        <div class="debrief-glow"></div>
+        <div class="status-bar" style="width:100%;">
+          <span>10:47</span><span>●●● 🔋</span>
+        </div>
+
+        <div class="debrief-icon-wrap">
+          <div class="debrief-wave">
+            <div class="debrief-bar" style="height:10px;"></div>
+            <div class="debrief-bar" style="height:20px;"></div>
+            <div class="debrief-bar" style="height:28px;"></div>
+            <div class="debrief-bar" style="height:16px;"></div>
+            <div class="debrief-bar" style="height:24px;"></div>
+            <div class="debrief-bar" style="height:10px;"></div>
+          </div>
+        </div>
+
+        <div class="debrief-title">Ride complete</div>
+        <div class="debrief-sub">Playing your debrief…</div>
+
+        <!-- Spoken debrief preview -->
+        <div class="debrief-quote">
+          <div class="debrief-quote-text">
+            "You hit <strong>3 of 4 segments</strong>. <strong>New PR on Hawk Hill: 3:54.</strong> Conzelman was 8 seconds off — you were strong through the mid-section and faded late. Overall a solid effort. Syncing to Strava."
+          </div>
+        </div>
+
+        <!-- Quick stats appearing under debrief -->
+        <div class="debrief-stat-row">
+          <div class="debrief-stat-card">
+            <div class="debrief-stat-val">47.2</div>
+            <div class="debrief-stat-label">km</div>
+          </div>
+          <div class="debrief-stat-card">
+            <div class="debrief-stat-val">1:52</div>
+            <div class="debrief-stat-label">time</div>
+          </div>
+          <div class="debrief-stat-card">
+            <div class="debrief-stat-val" style="color:#F5C842;">1 PR</div>
+            <div class="debrief-stat-label">today</div>
+          </div>
+        </div>
+
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="screen-label">Debrief playing · Auto-advances</div>
+  </div>
+
+  <!-- =================== SCREEN: POST-RIDE SUMMARY =================== -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen-summary">
+
+        <!-- Map at top -->
+        <div class="summary-map">
+          <!-- Simulated dark map -->
+          <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 390 200">
+            <!-- Road grid background -->
+            <rect width="390" height="200" fill="#1A2030"/>
+            <line x1="0" y1="80" x2="390" y2="80" stroke="#243040" stroke-width="5"/>
+            <line x1="0" y1="130" x2="390" y2="130" stroke="#243040" stroke-width="3"/>
+            <line x1="100" y1="0" x2="100" y2="200" stroke="#243040" stroke-width="5"/>
+            <line x1="240" y1="0" x2="240" y2="200" stroke="#243040" stroke-width="3"/>
+            <line x1="320" y1="0" x2="320" y2="200" stroke="#243040" stroke-width="3"/>
+            <!-- Route trace -->
+            <path d="M 30 160 L 100 160 L 100 80 L 240 80 L 240 130 L 320 130 L 320 50 L 390 50" stroke="#F5C842" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+            <!-- Segment dots on route -->
+            <circle cx="170" cy="80" r="6" fill="#F5C842" opacity="0.9"/>
+            <circle cx="240" cy="105" r="6" fill="#F5C842" opacity="0.6"/>
+            <circle cx="320" cy="90" r="6" fill="#888888" opacity="0.6"/>
+          </svg>
+          <div class="summary-map-gradient"></div>
+          <div class="summary-nav">
+            <div class="status-bar" style="position:absolute;top:0;left:0;right:0;z-index:10;padding:0 24px 8px;">
+              <span>10:49</span><span>●●● 🔋</span>
+            </div>
+            <div style="margin-top:30px;">
+              <div style="font-size:11px;font-weight:600;color:#555555;text-transform:uppercase;letter-spacing:0.8px;">Saturday · Apr 11</div>
+              <div style="font-size:17px;font-weight:700;color:#F0F0F0;letter-spacing:-0.3px;">Morning Ride</div>
+            </div>
+            <div class="summary-share-btn" style="margin-top:30px;">↑</div>
+          </div>
+        </div>
+
+        <!-- Scrollable area -->
+        <div class="summary-scroll">
+
+          <!-- PR headline -->
+          <div class="pr-headline">
+            <div class="pr-crown-badge">🏆 1 New PR</div>
+            <div class="pr-headline-text">Hawk Hill Climb</div>
+          </div>
+
+          <!-- Stats grid -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-val">47.2</div>
+              <div class="stat-label">km</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-val">1:52</div>
+              <div class="stat-label">duration</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-val">820</div>
+              <div class="stat-label">elevation</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-val">3 / 4</div>
+              <div class="stat-label">segments</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-val">247</div>
+              <div class="stat-label">avg watts</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-val">158</div>
+              <div class="stat-label">avg bpm</div>
+            </div>
+          </div>
+
+          <!-- Strava sync banner -->
+          <div class="sync-banner">
+            <span>✓</span>
+            Synced to Strava
+          </div>
+
+          <!-- Segment results -->
+          <div class="section-label">Segments</div>
+
+          <div class="seg-result-card pr-card">
+            <div class="seg-result-top">
+              <div class="seg-result-name">Hawk Hill Climb</div>
+              <div class="seg-result-time" style="color:#F5C842;">3:54</div>
+            </div>
+            <div class="seg-result-bottom">
+              <div class="seg-result-note">Previous PR: 3:58</div>
+              <div class="seg-pr-tag">🏆 NEW PR · −4s</div>
+            </div>
+          </div>
+
+          <div class="seg-result-card">
+            <div class="seg-result-top">
+              <div class="seg-result-name">Conzelman Sprint</div>
+              <div class="seg-result-time">1:49</div>
+            </div>
+            <div class="seg-result-bottom">
+              <div class="seg-result-note">PR: 1:41</div>
+              <div class="seg-off-tag">+8s off PR</div>
+            </div>
+          </div>
+
+          <div class="seg-result-card">
+            <div class="seg-result-top">
+              <div class="seg-result-name">Battery to Beach</div>
+              <div class="seg-result-time">6:21</div>
+            </div>
+            <div class="seg-result-bottom">
+              <div class="seg-result-note">PR: 6:18</div>
+              <div class="seg-off-tag">+3s off PR</div>
+            </div>
+          </div>
+
+          <div class="seg-result-card" style="opacity:0.5;">
+            <div class="seg-result-top">
+              <div class="seg-result-name">Marin Ave Wall</div>
+              <div class="seg-result-time" style="color:#444444;">—</div>
+            </div>
+            <div class="seg-result-bottom">
+              <div class="seg-result-note" style="color:#3A3A3A;">Skipped · took alternate route</div>
+            </div>
+          </div>
+
+          <!-- Listen again -->
+          <div class="listen-btn">♪ Listen to Debrief Again</div>
+
+          <!-- Done -->
+          <div class="done-btn">Done</div>
+
+        </div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="screen-label">Post-Ride Summary</div>
+  </div>
+
+  <!-- =================== SCREEN: SUMMARY + EXPANDED SEGMENT =================== -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen-summary">
+
+        <!-- Condensed map -->
+        <div class="summary-map" style="height:140px;">
+          <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 390 140">
+            <rect width="390" height="140" fill="#1A2030"/>
+            <line x1="0" y1="60" x2="390" y2="60" stroke="#243040" stroke-width="5"/>
+            <line x1="100" y1="0" x2="100" y2="140" stroke="#243040" stroke-width="5"/>
+            <line x1="240" y1="0" x2="240" y2="140" stroke="#243040" stroke-width="3"/>
+            <path d="M 30 110 L 100 110 L 100 60 L 240 60 L 240 90 L 320 90 L 320 30 L 390 30" stroke="#F5C842" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+            <circle cx="170" cy="60" r="7" fill="#F5C842"/>
+            <circle cx="240" cy="75" r="6" fill="#888888" opacity="0.6"/>
+          </svg>
+          <div class="summary-map-gradient"></div>
+          <div class="summary-nav">
+            <div class="status-bar" style="position:absolute;top:0;left:0;right:0;z-index:10;padding:0 24px 8px;">
+              <span>10:49</span><span>●●● 🔋</span>
+            </div>
+            <div style="margin-top:20px;">
+              <div style="font-size:17px;font-weight:700;color:#F0F0F0;letter-spacing:-0.3px;">Morning Ride</div>
+            </div>
+            <div class="summary-share-btn" style="margin-top:20px;">↑</div>
+          </div>
+        </div>
+
+        <!-- Stats row (condensed) -->
+        <div style="display:flex;gap:0;padding:14px 20px 0;border-bottom:1px solid #272727;padding-bottom:14px;">
+          <div style="flex:1;text-align:center;">
+            <div style="font-size:18px;font-weight:700;color:#F0F0F0;">47.2 km</div>
+            <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;">Distance</div>
+          </div>
+          <div style="width:1px;background:#2A2A2A;"></div>
+          <div style="flex:1;text-align:center;">
+            <div style="font-size:18px;font-weight:700;color:#F0F0F0;">1:52</div>
+            <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;">Duration</div>
+          </div>
+          <div style="width:1px;background:#2A2A2A;"></div>
+          <div style="flex:1;text-align:center;">
+            <div style="font-size:18px;font-weight:700;color:#F5C842;">1 PR</div>
+            <div style="font-size:10px;color:#444;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;">Today</div>
+          </div>
+        </div>
+
+        <!-- Segment label -->
+        <div class="section-label">Segments</div>
+
+        <!-- Expanded segment card -->
+        <div class="seg-expanded-card">
+          <div class="seg-expanded-header">
+            <div>
+              <div style="font-size:15px;font-weight:700;color:#F5C842;">Hawk Hill Climb</div>
+              <div style="font-size:12px;color:#555555;margin-top:2px;">3:54 · NEW PR · −4 seconds</div>
+            </div>
+            <div style="font-size:13px;color:#555555;">▲</div>
+          </div>
+
+          <div class="seg-splits-area">
+            <div class="splits-title">Split comparison · Today vs PR</div>
+
+            <div class="split-row">
+              <div class="split-label" style="color:#555555;">25%</div>
+              <div class="split-bar-track">
+                <div class="split-bar-pr" style="width:70%;"></div>
+                <div class="split-bar-today" style="width:68%;opacity:0.9;"></div>
+              </div>
+              <div class="split-val" style="color:#30A46C;">−1s</div>
+            </div>
+
+            <div class="split-row">
+              <div class="split-label" style="color:#555555;">50%</div>
+              <div class="split-bar-track">
+                <div class="split-bar-pr" style="width:70%;"></div>
+                <div class="split-bar-today" style="width:72%;opacity:0.9;"></div>
+              </div>
+              <div class="split-val" style="color:#30A46C;">−2s</div>
+            </div>
+
+            <div class="split-row">
+              <div class="split-label" style="color:#555555;">75%</div>
+              <div class="split-bar-track">
+                <div class="split-bar-pr" style="width:70%;"></div>
+                <div class="split-bar-today" style="width:74%;opacity:0.9;"></div>
+              </div>
+              <div class="split-val" style="color:#30A46C;">−3s</div>
+            </div>
+
+            <div class="split-row" style="margin-bottom:0;">
+              <div class="split-label" style="color:#555555;">End</div>
+              <div class="split-bar-track">
+                <div class="split-bar-pr" style="width:70%;"></div>
+                <div class="split-bar-today" style="width:73%;opacity:0.9;"></div>
+              </div>
+              <div class="split-val" style="color:#30A46C;">−4s</div>
+            </div>
+
+            <!-- Cue review -->
+            <div class="cue-review">
+              <div class="cue-review-label">Coaching cue played</div>
+              "Start the push 20 seconds earlier than feels right. You fade in the final 200m — don't."
+            </div>
+          </div>
+        </div>
+
+        <!-- Collapsed cards below -->
+        <div class="seg-result-card" style="margin-top:0;">
+          <div class="seg-result-top">
+            <div class="seg-result-name">Conzelman Sprint</div>
+            <div class="seg-result-time">1:49</div>
+          </div>
+          <div class="seg-result-bottom">
+            <div class="seg-result-note">PR: 1:41</div>
+            <div class="seg-off-tag">+8s off PR</div>
+          </div>
+        </div>
+
+        <div class="listen-btn" style="margin:10px 20px 0;">♪ Listen to Debrief Again</div>
+        <div class="done-btn">Done</div>
+
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="screen-label">Summary · Segment expanded</div>
+  </div>
+
+</div>
+
+</body>
+</html>

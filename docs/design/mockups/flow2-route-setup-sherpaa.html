@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sherpaa — Flow 2: Route Setup & Pre-Ride Brief</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+    background: #1A1A1A;
+    padding: 40px 32px;
+    min-height: 100vh;
+  }
+
+  h1 { color: #F0F0F0; font-size: 18px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.3px; }
+  .subtitle { color: #444444; font-size: 13px; margin-bottom: 48px; }
+
+  .flow {
+    display: flex;
+    gap: 32px;
+    overflow-x: auto;
+    padding-bottom: 40px;
+    align-items: flex-start;
+  }
+
+  .screen-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .screen-label {
+    color: #555555;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    text-align: center;
+  }
+
+  /* iPhone frame */
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: #1C1C1E;
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid #333333;
+    box-shadow: 0 32px 64px rgba(0,0,0,0.5), 0 0 0 1px #2A2A2A;
+    flex-shrink: 0;
+  }
+
+  .notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 34px;
+    background: #000;
+    border-radius: 0 0 20px 20px;
+    z-index: 30;
+  }
+
+  .home-indicator {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 134px;
+    height: 5px;
+    background: #F5C842;
+    border-radius: 999px;
+    opacity: 0.3;
+    z-index: 30;
+  }
+
+  /* Status bar */
+  .status-bar {
+    height: 54px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 24px 8px;
+    position: relative;
+    z-index: 10;
+    color: #F0F0F0;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  /* Buttons */
+  .btn-gold {
+    width: 100%;
+    height: 54px;
+    background: #F5C842;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    font-weight: 600;
+    color: #000000;
+    cursor: pointer;
+    gap: 8px;
+    letter-spacing: -0.2px;
+  }
+
+  .btn-ghost {
+    font-size: 15px;
+    font-weight: 500;
+    color: rgba(240,240,240,0.4);
+    text-align: center;
+    cursor: pointer;
+  }
+
+  /* ===================== SCREEN 6: ROUTE SETUP ===================== */
+
+  .map-bg {
+    position: absolute;
+    inset: 0;
+    background: #1E2430;
+    overflow: hidden;
+  }
+
+  /* Simulated map roads */
+  .map-road {
+    position: absolute;
+    background: #2A3345;
+    border-radius: 2px;
+  }
+
+  .map-road.h { height: 6px; }
+  .map-road.v { width: 6px; }
+  .map-road.w { height: 3px; background: #243040; }
+
+  /* Segment highlight lines on map */
+  .map-segment {
+    position: absolute;
+    height: 4px;
+    border-radius: 999px;
+  }
+
+  .nav-bar-map {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100px;
+    background: linear-gradient(to bottom, rgba(28,28,30,0.95) 0%, rgba(28,28,30,0) 100%);
+    z-index: 10;
+    display: flex;
+    align-items: flex-end;
+    padding: 0 20px 12px;
+    gap: 12px;
+  }
+
+  .back-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    background: rgba(42,42,42,0.9);
+    border: 1px solid #3A3A3A;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #F0F0F0;
+    flex-shrink: 0;
+  }
+
+  .nav-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: #F0F0F0;
+  }
+
+  /* Route method pills */
+  .route-pills {
+    position: absolute;
+    top: 108px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+  }
+
+  .route-pill {
+    flex: 1;
+    height: 34px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 500;
+    gap: 5px;
+  }
+
+  .route-pill.active {
+    background: #F5C842;
+    color: #000000;
+    font-weight: 600;
+  }
+
+  .route-pill.inactive {
+    background: rgba(42,42,42,0.9);
+    border: 1px solid #3A3A3A;
+    color: #888888;
+  }
+
+  /* Bottom sheet */
+  .bottom-sheet {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #1C1C1E;
+    border-radius: 24px 24px 0 0;
+    border-top: 1px solid #333333;
+    z-index: 20;
+    padding: 0 20px 40px;
+  }
+
+  .sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: #3A3A3A;
+    border-radius: 999px;
+    margin: 12px auto 20px;
+  }
+
+  .sheet-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .sheet-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #F0F0F0;
+    letter-spacing: -0.3px;
+  }
+
+  .segment-count-badge {
+    background: rgba(245,200,66,0.12);
+    border: 1px solid rgba(245,200,66,0.25);
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #F5C842;
+  }
+
+  /* Segment mini list */
+  .segment-mini-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .segment-mini-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #2A2A2A;
+    border: 1px solid #363636;
+    border-radius: 10px;
+    padding: 10px 14px;
+  }
+
+  .seg-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+
+  .seg-name { font-size: 14px; font-weight: 600; color: #F0F0F0; }
+  .seg-meta { font-size: 12px; color: #555555; margin-top: 1px; }
+  .seg-pr-tag {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 600;
+    color: #F5C842;
+    background: rgba(245,200,66,0.1);
+    border: 1px solid rgba(245,200,66,0.2);
+    border-radius: 999px;
+    padding: 2px 8px;
+    flex-shrink: 0;
+  }
+
+  /* Goal mode chips */
+  .goal-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #555555;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  .goal-chips {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .goal-chip {
+    flex: 1;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    padding: 0 4px;
+  }
+
+  .goal-chip.selected {
+    background: #F5C842;
+    color: #000000;
+  }
+
+  .goal-chip.unselected {
+    background: #2A2A2A;
+    border: 1px solid #363636;
+    color: #666666;
+  }
+
+  /* ===================== SCREEN 7: CUE GENERATION ===================== */
+
+  .screen-gen {
+    background: #1C1C1E;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .gen-icon-wrap {
+    width: 80px;
+    height: 80px;
+    border-radius: 999px;
+    background: rgba(245,200,66,0.1);
+    border: 1px solid rgba(245,200,66,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 64px auto 28px;
+  }
+
+  .gen-wave {
+    display: flex;
+    align-items: flex-end;
+    gap: 5px;
+    height: 36px;
+  }
+
+  .gen-bar {
+    width: 5px;
+    background: #F5C842;
+    border-radius: 3px;
+  }
+
+  .gen-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #F0F0F0;
+    text-align: center;
+    letter-spacing: -0.5px;
+    padding: 0 32px;
+    margin-bottom: 8px;
+    line-height: 30px;
+  }
+
+  .gen-sub {
+    font-size: 14px;
+    font-weight: 400;
+    color: #555555;
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .gen-progress-list {
+    width: calc(100% - 48px);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+
+  .gen-item {
+    background: #2A2A2A;
+    border: 1px solid #363636;
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .gen-item-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .gen-item-icon.done { background: rgba(48,164,108,0.15); color: #30A46C; }
+  .gen-item-icon.active { background: rgba(245,200,66,0.15); }
+  .gen-item-icon.pending { background: #232323; }
+
+  .gen-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(245,200,66,0.2);
+    border-top-color: #F5C842;
+    border-radius: 999px;
+  }
+
+  .gen-pending-dot {
+    width: 6px;
+    height: 6px;
+    background: #3A3A3A;
+    border-radius: 999px;
+    margin: auto;
+  }
+
+  .gen-item-name { font-size: 14px; font-weight: 600; color: #F0F0F0; }
+  .gen-item-status-done { font-size: 12px; color: #30A46C; margin-top: 2px; }
+  .gen-item-status-active { font-size: 12px; color: #F5C842; margin-top: 2px; }
+  .gen-item-status-pending { font-size: 12px; color: #3A3A3A; margin-top: 2px; }
+
+  .gen-time-badge {
+    background: #2A2A2A;
+    border: 1px solid #363636;
+    border-radius: 999px;
+    padding: 5px 14px;
+    font-size: 12px;
+    color: #555555;
+    margin-bottom: 24px;
+  }
+
+  /* ===================== SCREEN 8: PRE-RIDE BRIEF ===================== */
+
+  .screen-brief {
+    background: #1C1C1E;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .brief-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 0;
+  }
+
+  .brief-nav-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #F0F0F0;
+    letter-spacing: -0.3px;
+  }
+
+  .brief-nav-edit {
+    font-size: 15px;
+    font-weight: 500;
+    color: #F5C842;
+  }
+
+  /* Summary card at top */
+  .brief-summary-card {
+    margin: 20px 20px 0;
+    background: #2A2A2A;
+    border: 1px solid #363636;
+    border-radius: 16px;
+    padding: 20px;
+  }
+
+  .brief-goal-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .brief-goal-badge {
+    background: #F5C842;
+    color: #000000;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 4px 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .brief-audio-indicator {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #F5C842;
+    font-weight: 500;
+  }
+
+  .audio-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: #F5C842;
+  }
+
+  .brief-stats-row {
+    display: flex;
+    gap: 0;
+  }
+
+  .brief-stat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .brief-stat + .brief-stat {
+    border-left: 1px solid #3A3A3A;
+    padding-left: 16px;
+    margin-left: 0;
+  }
+
+  .brief-stat-val { font-size: 22px; font-weight: 700; color: #F0F0F0; letter-spacing: -0.5px; }
+  .brief-stat-label { font-size: 11px; font-weight: 500; color: #555555; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Spoken brief banner */
+  .spoken-brief-banner {
+    margin: 12px 20px 0;
+    background: rgba(245,200,66,0.08);
+    border: 1px solid rgba(245,200,66,0.2);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .spoken-brief-wave {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .spoken-brief-bar {
+    width: 3px;
+    background: #F5C842;
+    border-radius: 2px;
+  }
+
+  .spoken-brief-text {
+    font-size: 13px;
+    color: rgba(240,240,240,0.75);
+    line-height: 19px;
+    font-style: italic;
+  }
+
+  .spoken-brief-text strong { color: #F5C842; font-style: normal; }
+
+  /* Segment list */
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #444444;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    padding: 20px 20px 10px;
+  }
+
+  .brief-segment-list {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 20px;
+  }
+
+  .brief-seg-item {
+    background: #2A2A2A;
+    border: 1px solid #363636;
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .brief-seg-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: #363636;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #888888;
+    flex-shrink: 0;
+  }
+
+  .brief-seg-info { flex: 1; }
+  .brief-seg-name { font-size: 14px; font-weight: 600; color: #F0F0F0; }
+  .brief-seg-meta { font-size: 12px; color: #555555; margin-top: 2px; }
+
+  .brief-seg-pr {
+    font-size: 11px;
+    font-weight: 600;
+    color: #F5C842;
+    background: rgba(245,200,66,0.1);
+    border: 1px solid rgba(245,200,66,0.2);
+    border-radius: 999px;
+    padding: 2px 8px;
+    flex-shrink: 0;
+  }
+
+  /* Bottom CTA */
+  .brief-footer {
+    padding: 16px 20px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .btn-start {
+    width: 100%;
+    height: 58px;
+    background: #F5C842;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: #000000;
+    letter-spacing: -0.3px;
+    gap: 10px;
+  }
+
+  .divider { height: 1px; background: #333333; margin: 0 20px; }
+</style>
+</head>
+<body>
+
+<h1>Sherpaa — Flow 2: Route Setup & Pre-Ride Brief</h1>
+<p class="subtitle">3 screens · Triggered from "Plan Ride" on Home · Goal mode selection + cue pre-generation</p>
+
+<div class="flow">
+
+  <!-- =================== SCREEN 6: ROUTE SETUP =================== -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+
+      <!-- Map background (simulated) -->
+      <div class="map-bg">
+        <!-- Road grid -->
+        <div class="map-road h" style="top:160px;left:0;right:0;"></div>
+        <div class="map-road h" style="top:220px;left:0;right:0;"></div>
+        <div class="map-road h w" style="top:270px;left:0;right:0;"></div>
+        <div class="map-road h" style="top:330px;left:0;right:0;"></div>
+        <div class="map-road h w" style="top:380px;left:0;right:0;"></div>
+        <div class="map-road v" style="top:140px;left:80px;height:260px;"></div>
+        <div class="map-road v" style="top:140px;left:180px;height:260px;"></div>
+        <div class="map-road v" style="top:140px;left:290px;height:260px;"></div>
+        <div class="map-road v w" style="top:140px;left:240px;height:260px;"></div>
+
+        <!-- Traced route line -->
+        <svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;" viewBox="0 0 390 430">
+          <path d="M 60 380 L 180 380 L 180 220 L 290 220 L 290 330 L 390 330" stroke="#F5C842" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+        </svg>
+
+        <!-- Segment overlays on map -->
+        <div style="position:absolute;top:215px;left:120px;width:80px;height:10px;border-radius:999px;background:#F5C842;opacity:0.8;transform:rotate(0deg);z-index:5;"></div>
+        <div style="position:absolute;top:215px;left:230px;width:60px;height:10px;border-radius:999px;background:#F5C842;opacity:0.6;transform:rotate(0deg);z-index:5;"></div>
+        <div style="position:absolute;top:173px;left:285px;width:10px;height:70px;border-radius:999px;background:#F5C842;opacity:0.7;transform:rotate(0deg);z-index:5;"></div>
+        <div style="position:absolute;top:325px;left:290px;width:70px;height:10px;border-radius:999px;background:#F5C842;opacity:0.65;transform:rotate(0deg);z-index:5;"></div>
+
+        <!-- Location pin -->
+        <div style="position:absolute;top:355px;left:55px;z-index:8;font-size:20px;">📍</div>
+      </div>
+
+      <!-- Top gradient + nav -->
+      <div class="nav-bar-map">
+        <div class="status-bar" style="position:absolute;top:0;left:0;right:0;z-index:10;"><span style="padding-left:24px;">9:41</span><span style="padding-right:24px;">●●● 🔋</span></div>
+        <div class="back-btn" style="margin-top:20px;">←</div>
+        <div class="nav-title" style="margin-top:20px;">Plan Ride</div>
+      </div>
+
+      <!-- Route method pills -->
+      <div class="route-pills">
+        <div class="route-pill active">✦ Strava Route</div>
+        <div class="route-pill inactive">Import GPX</div>
+        <div class="route-pill inactive">Skip</div>
+      </div>
+
+      <!-- Bottom sheet -->
+      <div class="bottom-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-row">
+          <div class="sheet-title">4 segments on route</div>
+          <div class="segment-count-badge">3 PR targets</div>
+        </div>
+
+        <div class="segment-mini-list">
+          <div class="segment-mini-item">
+            <div class="seg-dot" style="background:#F5C842;"></div>
+            <div>
+              <div class="seg-name">Hawk Hill Climb</div>
+              <div class="seg-meta">1.2 km · ~4:10 est.</div>
+            </div>
+            <div class="seg-pr-tag">PR target</div>
+          </div>
+          <div class="segment-mini-item">
+            <div class="seg-dot" style="background:#F5C842;"></div>
+            <div>
+              <div class="seg-name">Conzelman Sprint</div>
+              <div class="seg-meta">0.6 km · ~1:45 est.</div>
+            </div>
+            <div class="seg-pr-tag">PR target</div>
+          </div>
+          <div class="segment-mini-item">
+            <div class="seg-dot" style="background:#888888;"></div>
+            <div>
+              <div class="seg-name">Battery to Beach</div>
+              <div class="seg-meta">2.1 km · ~6:30 est.</div>
+            </div>
+          </div>
+          <div class="segment-mini-item">
+            <div class="seg-dot" style="background:#444444;"></div>
+            <div>
+              <div class="seg-name">Marin Ave Wall</div>
+              <div class="seg-meta" style="color:#444444;">No history yet · 0.4 km</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="goal-label">Goal for this ride</div>
+        <div class="goal-chips">
+          <div class="goal-chip unselected">PR Attempt</div>
+          <div class="goal-chip selected">Training</div>
+          <div class="goal-chip unselected">Recovery</div>
+        </div>
+
+        <div class="btn-gold">Generate Coaching Cues</div>
+      </div>
+
+      <div class="home-indicator"></div>
+    </div>
+    <div class="screen-label">6. Route Setup</div>
+  </div>
+
+  <!-- =================== SCREEN 7: CUE GENERATION =================== -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen-gen">
+        <div class="status-bar" style="width:100%;">
+          <span>9:41</span><span>●●● 🔋</span>
+        </div>
+
+        <div class="gen-icon-wrap">
+          <div class="gen-wave">
+            <div class="gen-bar" style="height:12px;"></div>
+            <div class="gen-bar" style="height:22px;"></div>
+            <div class="gen-bar" style="height:32px;"></div>
+            <div class="gen-bar" style="height:20px;"></div>
+            <div class="gen-bar" style="height:28px;"></div>
+            <div class="gen-bar" style="height:14px;"></div>
+          </div>
+        </div>
+
+        <div class="gen-title">Preparing your coaching cues</div>
+        <div class="gen-sub">Analysing your segment history…</div>
+
+        <div class="gen-progress-list">
+
+          <div class="gen-item">
+            <div class="gen-item-icon done">✓</div>
+            <div>
+              <div class="gen-item-name">Hawk Hill Climb</div>
+              <div class="gen-item-status-done">3 cue variants ready</div>
+            </div>
+          </div>
+
+          <div class="gen-item">
+            <div class="gen-item-icon done">✓</div>
+            <div>
+              <div class="gen-item-name">Conzelman Sprint</div>
+              <div class="gen-item-status-done">3 cue variants ready</div>
+            </div>
+          </div>
+
+          <div class="gen-item" style="border-color:rgba(245,200,66,0.25);">
+            <div class="gen-item-icon active">
+              <div class="gen-spinner"></div>
+            </div>
+            <div>
+              <div class="gen-item-name">Battery to Beach</div>
+              <div class="gen-item-status-active">Generating cues…</div>
+            </div>
+          </div>
+
+          <div class="gen-item">
+            <div class="gen-item-icon pending">
+              <div class="gen-pending-dot"></div>
+            </div>
+            <div>
+              <div class="gen-item-name">Marin Ave Wall</div>
+              <div class="gen-item-status-pending">Waiting…</div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="gen-time-badge">~15 seconds remaining</div>
+
+        <div class="btn-ghost">Skip — start with available cues</div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="screen-label">7. Cue Generation</div>
+  </div>
+
+  <!-- =================== SCREEN 8: PRE-RIDE BRIEF =================== -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen-brief">
+        <div class="status-bar">
+          <span>9:41</span><span>●●● 🔋</span>
+        </div>
+
+        <div class="brief-nav">
+          <div class="back-btn" style="width:36px;height:36px;border-radius:999px;background:#2A2A2A;border:1px solid #3A3A3A;display:flex;align-items:center;justify-content:center;font-size:16px;color:#F0F0F0;">←</div>
+          <div class="brief-nav-title">Ready to Ride</div>
+          <div class="brief-nav-edit">Edit</div>
+        </div>
+
+        <!-- Summary card -->
+        <div class="brief-summary-card">
+          <div class="brief-goal-row">
+            <div class="brief-goal-badge">Training</div>
+            <div class="brief-audio-indicator">
+              <div class="audio-dot"></div>
+              Playing brief…
+            </div>
+          </div>
+          <div class="brief-stats-row">
+            <div class="brief-stat">
+              <div class="brief-stat-val">4</div>
+              <div class="brief-stat-label">Segments</div>
+            </div>
+            <div class="brief-stat" style="padding-left:16px;margin-left:16px;">
+              <div class="brief-stat-val">2</div>
+              <div class="brief-stat-label">PR Targets</div>
+            </div>
+            <div class="brief-stat" style="padding-left:16px;margin-left:16px;">
+              <div class="brief-stat-val">47 km</div>
+              <div class="brief-stat-label">Route</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spoken brief preview -->
+        <div class="spoken-brief-banner">
+          <div class="spoken-brief-wave">
+            <div class="spoken-brief-bar" style="height:8px;"></div>
+            <div class="spoken-brief-bar" style="height:14px;"></div>
+            <div class="spoken-brief-bar" style="height:20px;"></div>
+            <div class="spoken-brief-bar" style="height:12px;"></div>
+            <div class="spoken-brief-bar" style="height:18px;"></div>
+            <div class="spoken-brief-bar" style="height:8px;"></div>
+          </div>
+          <div class="spoken-brief-text">
+            <strong>4 segments today.</strong> Your best shot is Hawk Hill — you've been fading in the final 200m the last 3 times. Start the push 20 seconds earlier than feels right.
+          </div>
+        </div>
+
+        <!-- Segments on route -->
+        <div class="section-label">On your route</div>
+
+        <div class="brief-segment-list">
+          <div class="brief-seg-item">
+            <div class="brief-seg-num">1</div>
+            <div class="brief-seg-info">
+              <div class="brief-seg-name">Hawk Hill Climb</div>
+              <div class="brief-seg-meta">1.2 km · 3 cues ready · Best: 3:58</div>
+            </div>
+            <div class="brief-seg-pr">PR</div>
+          </div>
+          <div class="brief-seg-item">
+            <div class="brief-seg-num">2</div>
+            <div class="brief-seg-info">
+              <div class="brief-seg-name">Conzelman Sprint</div>
+              <div class="brief-seg-meta">0.6 km · 3 cues ready · Best: 1:41</div>
+            </div>
+            <div class="brief-seg-pr">PR</div>
+          </div>
+          <div class="brief-seg-item">
+            <div class="brief-seg-num">3</div>
+            <div class="brief-seg-info">
+              <div class="brief-seg-name">Battery to Beach</div>
+              <div class="brief-seg-meta">2.1 km · 3 cues ready</div>
+            </div>
+          </div>
+          <div class="brief-seg-item" style="opacity:0.55;">
+            <div class="brief-seg-num">4</div>
+            <div class="brief-seg-info">
+              <div class="brief-seg-name">Marin Ave Wall</div>
+              <div class="brief-seg-meta" style="color:#444444;">No history yet · generic cues only</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer CTA -->
+        <div class="brief-footer">
+          <div class="btn-start">▶ Start Ride</div>
+          <div class="btn-ghost">Change goal mode</div>
+        </div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="screen-label">8. Pre-Ride Brief</div>
+  </div>
+
+</div>
+
+</body>
+</html>

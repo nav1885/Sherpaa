@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sherpaa — Flow 3: In-Ride Experience</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+    background: #1A1A1A;
+    padding: 40px 32px;
+    min-height: 100vh;
+  }
+
+  h1 { color: #F0F0F0; font-size: 18px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.3px; }
+  .subtitle { color: #444444; font-size: 13px; margin-bottom: 48px; }
+
+  .flow {
+    display: flex;
+    gap: 32px;
+    overflow-x: auto;
+    padding-bottom: 40px;
+    align-items: flex-start;
+  }
+
+  .screen-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .screen-label {
+    color: #555555;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    text-align: center;
+  }
+
+  /* iPhone frame */
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: #111111;
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid #333333;
+    box-shadow: 0 32px 64px rgba(0,0,0,0.5), 0 0 0 1px #2A2A2A;
+    flex-shrink: 0;
+  }
+
+  .notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 34px;
+    background: #000;
+    border-radius: 0 0 20px 20px;
+    z-index: 30;
+  }
+
+  .home-indicator {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 134px;
+    height: 5px;
+    background: #888888;
+    border-radius: 999px;
+    opacity: 0.3;
+    z-index: 30;
+  }
+
+  /* ===================== SCREEN 9: IN-RIDE ACTIVE ===================== */
+
+  .screen-ride {
+    background: #111111;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .ride-status-bar {
+    height: 54px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 24px 8px;
+    z-index: 10;
+  }
+
+  .ride-time-elapsed {
+    font-size: 13px;
+    font-weight: 600;
+    color: #F0F0F0;
+  }
+
+  .ride-status-icons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: #1E1E1E;
+    border: 1px solid #2A2A2A;
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .status-dot-live {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: #30A46C;
+  }
+
+  /* Next segment pill */
+  .next-seg-pill {
+    margin: 8px 20px 0;
+    background: rgba(245,200,66,0.08);
+    border: 1px solid rgba(245,200,66,0.2);
+    border-radius: 12px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .next-seg-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #F5C842;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 2px;
+  }
+
+  .next-seg-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #F0F0F0;
+  }
+
+  .next-seg-dist {
+    font-size: 22px;
+    font-weight: 700;
+    color: #F5C842;
+    letter-spacing: -0.5px;
+  }
+
+  .next-seg-dist-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: #555555;
+    text-align: right;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Main speed readout */
+  .speed-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 40px;
+  }
+
+  .speed-val {
+    font-size: 112px;
+    font-weight: 800;
+    color: #F0F0F0;
+    letter-spacing: -6px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .speed-unit {
+    font-size: 16px;
+    font-weight: 500;
+    color: #555555;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 4px;
+    margin-bottom: 40px;
+  }
+
+  /* Secondary metrics row */
+  .metrics-row {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+  }
+
+  .metric {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .metric-val {
+    font-size: 28px;
+    font-weight: 700;
+    color: #F0F0F0;
+    letter-spacing: -0.5px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .metric-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: #444444;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  .metric-divider {
+    width: 1px;
+    background: #2A2A2A;
+    align-self: stretch;
+    margin: 4px 0;
+  }
+
+  /* End ride button */
+  .end-ride-btn {
+    position: absolute;
+    bottom: 36px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: transparent;
+    border: 1px solid #2A2A2A;
+    border-radius: 999px;
+    padding: 10px 28px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #444444;
+    white-space: nowrap;
+  }
+
+  /* ===================== SCREEN 10: SEGMENT ACTIVE OVERLAY ===================== */
+
+  .screen-ride-overlay {
+    background: #111111;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* Dimmed ride screen behind overlay */
+  .overlay-bg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.3;
+    padding-bottom: 320px;
+  }
+
+  /* Active segment bottom sheet */
+  .seg-overlay-sheet {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #1A1A1A;
+    border-radius: 24px 24px 0 0;
+    border-top: 1px solid #2E2E2E;
+    padding: 0 24px 48px;
+    z-index: 20;
+  }
+
+  .seg-overlay-handle {
+    width: 36px;
+    height: 4px;
+    background: #3A3A3A;
+    border-radius: 999px;
+    margin: 12px auto 20px;
+  }
+
+  .seg-overlay-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: #F0F0F0;
+    letter-spacing: -0.4px;
+    margin-bottom: 20px;
+  }
+
+  /* Progress bar */
+  .seg-progress-track {
+    height: 4px;
+    background: #2A2A2A;
+    border-radius: 999px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+
+  .seg-progress-fill {
+    height: 100%;
+    background: #F5C842;
+    border-radius: 999px;
+  }
+
+  .seg-progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 500;
+    color: #444444;
+    margin-bottom: 24px;
+  }
+
+  /* Big elapsed time */
+  .seg-elapsed {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .seg-elapsed-val {
+    font-size: 64px;
+    font-weight: 800;
+    color: #F0F0F0;
+    letter-spacing: -3px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .seg-elapsed-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #444444;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-top: 4px;
+  }
+
+  /* Gap to PR */
+  .gap-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  .gap-card {
+    flex: 1;
+    background: #222222;
+    border: 1px solid #2E2E2E;
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+  }
+
+  .gap-card-val {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .gap-card-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: #444444;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+  }
+
+  /* ===================== SCREEN 11: SEGMENT RESULT ===================== */
+
+  .screen-result {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .screen-result.pr-bg {
+    background: #111111;
+  }
+
+  .result-glow {
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(245,200,66,0.12) 0%, rgba(245,200,66,0) 70%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -60%);
+  }
+
+  .result-crown {
+    font-size: 52px;
+    margin-bottom: 16px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .result-seg-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: #555555;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .result-time {
+    font-size: 80px;
+    font-weight: 800;
+    color: #F0F0F0;
+    letter-spacing: -4px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    position: relative;
+    z-index: 2;
+    margin-bottom: 16px;
+  }
+
+  .result-pr-badge {
+    background: #F5C842;
+    color: #000000;
+    font-size: 15px;
+    font-weight: 800;
+    border-radius: 999px;
+    padding: 6px 20px;
+    letter-spacing: 0.5px;
+    position: relative;
+    z-index: 2;
+    margin-bottom: 8px;
+  }
+
+  .result-gap {
+    font-size: 16px;
+    font-weight: 500;
+    position: relative;
+    z-index: 2;
+    margin-bottom: 48px;
+  }
+
+  .result-dismiss {
+    font-size: 13px;
+    font-weight: 500;
+    color: #3A3A3A;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Non-PR result variant */
+  .screen-result.noPR-bg {
+    background: #111111;
+  }
+
+  .result-neutral-badge {
+    background: #2A2A2A;
+    border: 1px solid #363636;
+    color: #888888;
+    font-size: 15px;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 6px 20px;
+    letter-spacing: 0.3px;
+    position: relative;
+    z-index: 2;
+    margin-bottom: 8px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Sherpaa — Flow 3: In-Ride Experience</h1>
+<p class="subtitle">4 screens · Primary UX is audio · Screen is status display only · No interaction required mid-ride</p>
+
+<div class="flow">
+
+  <!-- =================== SCREEN 9: IN-RIDE ACTIVE =================== -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen-ride">
+
+        <div class="ride-status-bar">
+          <div class="ride-time-elapsed">1:04:22</div>
+          <div class="ride-status-icons">
+            <div class="status-pill">
+              <div class="status-dot-live"></div>
+              <span style="color:#30A46C;">GPS</span>
+            </div>
+            <div class="status-pill">
+              <span style="color:#F5C842;">♪</span>
+              <span style="color:#888888;">On</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Next segment pill -->
+        <div class="next-seg-pill">
+          <div>
+            <div class="next-seg-label">Next segment</div>
+            <div class="next-seg-name">Hawk Hill Climb</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="next-seg-dist">1.2</div>
+            <div class="next-seg-dist-label">km away</div>
+          </div>
+        </div>
+
+        <!-- Speed -->
+        <div class="speed-center">
+          <div class="speed-val">28</div>
+          <div class="speed-unit">km/h</div>
+          <div class="metrics-row">
+            <div class="metric">
+              <div class="metric-val">162</div>
+              <div class="metric-label">bpm</div>
+            </div>
+            <div class="metric-divider"></div>
+            <div class="metric">
+              <div class="metric-val">247</div>
+              <div class="metric-label">watts</div>
+            </div>
+            <div class="metric-divider"></div>
+            <div class="metric">
+              <div class="metric-val">34.1</div>
+              <div class="metric-label">km</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="end-ride-btn">■ End Ride</div>
+
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="screen-label">9. In-Ride · Approaching segment</div>
+  </div>
+
+  <!-- =================== SCREEN 10: SEGMENT ACTIVE =================== -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen-ride-overlay">
+
+        <!-- Dimmed ride screen behind -->
+        <div class="overlay-bg">
+          <div class="ride-status-bar" style="width:100%;opacity:1;">
+            <div class="ride-time-elapsed">1:08:51</div>
+            <div class="ride-status-icons">
+              <div class="status-pill"><div class="status-dot-live"></div><span style="color:#30A46C;">GPS</span></div>
+            </div>
+          </div>
+          <div style="font-size:96px;font-weight:800;color:#F0F0F0;letter-spacing:-5px;line-height:1;margin-top:80px;">31</div>
+          <div style="font-size:15px;font-weight:500;color:#555555;text-transform:uppercase;letter-spacing:1px;margin-top:4px;">km/h</div>
+        </div>
+
+        <!-- Segment overlay sheet -->
+        <div class="seg-overlay-sheet">
+          <div class="seg-overlay-handle"></div>
+
+          <div class="seg-overlay-name">Hawk Hill Climb</div>
+
+          <!-- Progress bar -->
+          <div class="seg-progress-track">
+            <div class="seg-progress-fill" style="width:38%;"></div>
+          </div>
+          <div class="seg-progress-labels">
+            <span>Start</span>
+            <span style="color:#F5C842;">38%</span>
+            <span>Finish</span>
+          </div>
+
+          <!-- Elapsed time -->
+          <div class="seg-elapsed">
+            <div class="seg-elapsed-val">1:36</div>
+            <div class="seg-elapsed-label">Elapsed</div>
+          </div>
+
+          <!-- Gap to PR + speed -->
+          <div class="gap-row">
+            <div class="gap-card">
+              <div class="gap-card-val" style="color:#30A46C;">−2s</div>
+              <div class="gap-card-label">vs PR pace</div>
+            </div>
+            <div class="gap-card">
+              <div class="gap-card-val" style="color:#F0F0F0;">31</div>
+              <div class="gap-card-label">km/h</div>
+            </div>
+            <div class="gap-card">
+              <div class="gap-card-val" style="color:#F0F0F0;">271</div>
+              <div class="gap-card-label">watts</div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="screen-label">10. Segment Active · +2s ahead of PR</div>
+  </div>
+
+  <!-- =================== SCREEN 11A: SEGMENT RESULT (NEW PR) =================== -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen-result pr-bg">
+        <div class="result-glow"></div>
+
+        <div class="result-crown">🏆</div>
+        <div class="result-seg-name">Hawk Hill Climb</div>
+        <div class="result-time">3:54</div>
+        <div class="result-pr-badge">NEW PR</div>
+        <div class="result-gap" style="color:#F5C842;">−4 seconds</div>
+
+        <div class="result-dismiss">Tap anywhere · auto-dismiss in 4s</div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="screen-label">11a. Segment Result · New PR</div>
+  </div>
+
+  <!-- =================== SCREEN 11B: SEGMENT RESULT (NO PR) =================== -->
+  <div class="screen-wrap">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen-result noPR-bg">
+
+        <div style="font-size:40px;margin-bottom:16px;position:relative;z-index:2;">✓</div>
+        <div class="result-seg-name">Hawk Hill Climb</div>
+        <div class="result-time" style="font-size:72px;margin-bottom:16px;">4:02</div>
+        <div class="result-neutral-badge">+8s off PR</div>
+        <div class="result-gap" style="color:#555555;">PR: 3:54</div>
+
+        <div class="result-dismiss" style="margin-top:48px;">Tap anywhere · auto-dismiss in 4s</div>
+      </div>
+      <div class="home-indicator"></div>
+    </div>
+    <div class="screen-label">11b. Segment Result · Off PR</div>
+  </div>
+
+</div>
+
+</body>
+</html>

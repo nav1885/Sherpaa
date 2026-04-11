@@ -1,0 +1,78 @@
+{
+  "expo": {
+    "name": "Sherpaa",
+    "slug": "sherpaa",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1C1C1E"
+    },
+    "ios": {
+      "bundleIdentifier": "com.sherpaa.app",
+      "buildNumber": "1",
+      "supportsTablet": false,
+      "deploymentTarget": "16.0",
+      "infoPlist": {
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Sherpaa tracks your location during rides to detect segments and deliver coaching cues.",
+        "NSLocationWhenInUseUsageDescription": "Sherpaa uses your location to detect cycling segments and deliver coaching cues.",
+        "NSLocationAlwaysUsageDescription": "Sherpaa tracks your location in the background so coaching continues when your screen is off.",
+        "NSMotionUsageDescription": "Sherpaa uses motion data to improve speed accuracy during rides.",
+        "NSBluetoothAlwaysUsageDescription": "Sherpaa connects to heart rate monitors and power meters via Bluetooth.",
+        "UIBackgroundModes": [
+          "location",
+          "audio"
+        ]
+      }
+    },
+    "android": {
+      "package": "com.sherpaa.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1C1C1E"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "BLUETOOTH",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_SCAN",
+        "RECEIVE_BOOT_COMPLETED",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Sherpaa tracks your location during rides to detect segments and deliver coaching cues.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      "expo-secure-store",
+      "expo-av",
+      "expo-sqlite",
+      "expo-web-browser"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "5c16f102-567d-4d4a-b15e-b949e92c92bc"
+      }
+    },
+    "owner": "nhc002"
+  }
+}

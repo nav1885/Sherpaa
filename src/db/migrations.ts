@@ -1,0 +1,123 @@
+import { db } from './client';
+import { sql } from 'drizzle-orm';
+
+/**
+ * Run on app startup. Creates all tables if they don't exist.
+ * Uses IF NOT EXISTS so it's safe to call on every launch.
+ */
+export async function runMigrations(): Promise<void> {
+  await db.run(sql`PRAGMA journal_mode = WAL`);
+  await db.run(sql`PRAGMA foreign_keys = ON`);
+
+  await db.run(sql`
+    CREATE TABLE IF NOT EXISTS riders (
+      id TEXT PRIMARY KEY,
+      strava_athlete_id TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      avatar_url TEXT,
+      subscription_tier TEXT NOT NULL DEFAULT 'free',
+      subscription_expires_at INTEGER,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+
+  await db.run(sql`
+    CREATE TABLE IF NOT EXISTS segments (
+      id TEXT PRIMARY KEY,
+      strava_segment_id TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      distance_m REAL NOT NULL,
+      elevation_m REAL NOT NULL DEFAULT 0,
+      start_lat REAL NOT NULL,
+      start_lng REAL NOT NULL,
+      end_lat REAL NOT NULL,
+      end_lng REAL NOT NULL,
+      polyline TEXT,
+      is_starred INTEGER NOT NULL DEFAULT 1,
+      last_fetched_at INTEGER NOT NULL
+    )
+  `);
+
+  await db.run(sql`
+    CREATE INDEX IF NOT EXISTS idx_segments_strava_id ON segments(strava_segment_id)
+  `);
+
+  await db.run(sql`
+    CREATE TABLE IF NOT EXISTS rides (
+      id TEXT PRIMARY KEY,
+      rider_id TEXT NOT NULL REFERENCES riders(id),
+      name TEXT NOT NULL,
+      started_at INTEGER NOT NULL,
+      ended_at INTEGER NOT NULL,
+      distance_m REAL NOT NULL,
+      elevation_m REAL NOT NULL DEFAULT 0,
+      avg_hr_bpm INTEGER,
+      avg_watts INTEGER,
+      gpx_track TEXT,
+      strava_activity_id TEXT,
+      strava_synced INTEGER NOT NULL DEFAULT 0,
+      debrief_text TEXT,
+      goal_mode TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    )
+  `);
+
+  await db.run(sql`
+    CREATE TABLE IF NOT EXISTS segment_efforts (
+      id TEXT PRIMARY KEY,
+      segment_id TEXT NOT NULL REFERENCES segments(id),
+      ride_id TEXT NOT NULL REFERENCES rides(id),
+      rider_id TEXT NOT NULL REFERENCES riders(id),
+      time_sec INTEGER NOT NULL,
+      avg_watts INTEGER,
+      avg_hr_bpm INTEGER,
+      was_skipped INTEGER NOT NULL DEFAULT 0,
+      split_25_gap_sec INTEGER,
+      split_50_gap_sec INTEGER,
+      split_75_gap_sec INTEGER,
+      cue_variant_played TEXT,
+      cue_text_played TEXT,
+      is_new_pr INTEGER NOT NULL DEFAULT 0,
+      gap_to_pre_seconds INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL
+    )
+  `);
+
+  await db.run(sql`
+    CREATE INDEX IF NOT EXISTS idx_efforts_segment_id ON segment_efforts(segment_id)
+  `);
+  await db.run(sql`
+    CREATE INDEX IF NOT EXISTS idx_efforts_ride_id ON segment_efforts(ride_id)
+  `);
+  await db.run(sql`
+    CREATE INDEX IF NOT EXISTS idx_efforts_rider_id ON segment_efforts(rider_id)
+  `);
+
+  await db.run(sql`
+    CREATE TABLE IF NOT EXISTS cues (
+      id TEXT PRIMARY KEY,
+      segment_id TEXT NOT NULL REFERENCES segments(id),
+      goal_mode TEXT NOT NULL,
+      aggressive TEXT NOT NULL,
+      moderate TEXT NOT NULL,
+      recovery TEXT NOT NULL,
+      generated_at INTEGER NOT NULL
+    )
+  `);
+
+  await db.run(sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_cues_segment_goal ON cues(segment_id, goal_mode)
+  `);
+
+  await db.run(sql`
+    CREATE TABLE IF NOT EXISTS pacing_models (
+      id TEXT PRIMARY KEY,
+      segment_id TEXT NOT NULL UNIQUE REFERENCES segments(id),
+      tendency TEXT NOT NULL DEFAULT 'unknown',
+      confidence_score REAL NOT NULL DEFAULT 0,
+      effort_count INTEGER NOT NULL DEFAULT 0,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+}

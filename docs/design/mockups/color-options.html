@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sherpaa — Color Scheme Options</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    background: #111111;
+    padding: 40px 32px;
+  }
+
+  h1 { color: #FFFFFF; font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+  .subtitle { color: #555555; font-size: 13px; margin-bottom: 48px; }
+
+  .row {
+    display: flex;
+    gap: 24px;
+    overflow-x: auto;
+    padding-bottom: 40px;
+  }
+
+  .option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+
+  .option-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+  }
+
+  .option-sub {
+    font-size: 11px;
+    font-weight: 400;
+    color: #555555;
+    text-align: center;
+    margin-top: -10px;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 320px;
+    height: 693px;
+    border-radius: 40px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 32px 64px rgba(0,0,0,0.6), 0 0 0 1px #2A2A2A;
+    flex-shrink: 0;
+  }
+
+  .notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 104px;
+    height: 28px;
+    background: #000;
+    border-radius: 0 0 16px 16px;
+    z-index: 20;
+  }
+
+  .home-indicator {
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    height: 4px;
+    border-radius: 999px;
+    opacity: 0.3;
+    z-index: 20;
+  }
+
+  /* Welcome screen base */
+  .welcome {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .hero {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .hero img {
+    width: 100%;
+    height: auto;
+    position: absolute;
+    top: 24px;
+    mix-blend-mode: multiply;
+    filter: contrast(1.1) saturate(1.15) brightness(1.05);
+  }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+  }
+
+  .status-bar {
+    position: relative;
+    z-index: 5;
+    height: 44px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 20px 6px;
+    color: rgba(255,255,255,0.9);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0 20px 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 5;
+  }
+
+  .logo {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: #FFFFFF;
+    margin-bottom: 6px;
+  }
+
+  .tagline {
+    font-size: 12px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.75);
+    text-align: center;
+    white-space: nowrap;
+    margin-bottom: 28px;
+  }
+
+  .cta {
+    width: 100%;
+    height: 48px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+
+  .secondary {
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.55);
+  }
+
+  /* Swatches */
+  .swatches {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
+  .swatch {
+    width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+</style>
+</head>
+<body>
+
+<h1>Sherpaa — Color Options</h1>
+<p class="subtitle">5 directions · All energetic · None look like Strava</p>
+
+<div class="row">
+
+  <!-- OPTION 1: Midnight + Electric Lime -->
+  <div class="option">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="welcome">
+        <div class="hero" style="background:#0A0A0A;">
+          <img src="hero-mtb.png" alt=""/>
+          <div class="overlay" style="background:linear-gradient(to top, rgba(10,10,10,1) 0%, rgba(10,10,10,0.92) 22%, rgba(10,10,10,0.35) 48%, rgba(10,10,10,0.1) 65%, rgba(10,10,10,0.35) 100%);"></div>
+        </div>
+        <div class="status-bar"><span>9:41</span><span>●●● 🔋</span></div>
+        <div class="content">
+          <div class="logo" style="color:#C8FF00;letter-spacing:3px;">Sherpaa</div>
+          <div class="tagline">The only coach who was there last time.</div>
+          <div class="cta" style="background:#C8FF00;color:#0A0A0A;">Get Started</div>
+          <div class="secondary">I already have an account</div>
+        </div>
+      </div>
+      <div class="home-indicator" style="background:#C8FF00;"></div>
+    </div>
+    <div class="option-label" style="color:#C8FF00;">Option 1</div>
+    <div class="option-sub">Midnight + Electric Lime<br>#0A0A0A · #C8FF00</div>
+    <div class="swatches">
+      <div class="swatch" style="background:#0A0A0A;"></div>
+      <div class="swatch" style="background:#C8FF00;"></div>
+      <div class="swatch" style="background:#FFFFFF;"></div>
+    </div>
+  </div>
+
+  <!-- OPTION 2: Deep Navy + Hot Coral -->
+  <div class="option">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="welcome">
+        <div class="hero" style="background:#0A0F1A;">
+          <img src="hero-mtb.png" alt=""/>
+          <div class="overlay" style="background:linear-gradient(to top, rgba(10,15,26,1) 0%, rgba(10,15,26,0.92) 22%, rgba(10,15,26,0.3) 48%, rgba(10,15,26,0.1) 65%, rgba(10,15,26,0.4) 100%);"></div>
+        </div>
+        <div class="status-bar"><span>9:41</span><span>●●● 🔋</span></div>
+        <div class="content">
+          <div class="logo">Sherpaa</div>
+          <div class="tagline">The only coach who was there last time.</div>
+          <div class="cta" style="background:#FF4B4B;color:#FFFFFF;">Get Started</div>
+          <div class="secondary">I already have an account</div>
+        </div>
+      </div>
+      <div class="home-indicator" style="background:#FF4B4B;"></div>
+    </div>
+    <div class="option-label" style="color:#FF4B4B;">Option 2</div>
+    <div class="option-sub">Deep Navy + Hot Coral<br>#0A0F1A · #FF4B4B</div>
+    <div class="swatches">
+      <div class="swatch" style="background:#0A0F1A;"></div>
+      <div class="swatch" style="background:#FF4B4B;"></div>
+      <div class="swatch" style="background:#FFFFFF;"></div>
+    </div>
+  </div>
+
+  <!-- OPTION 3: Charcoal + Electric Cyan -->
+  <div class="option">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="welcome">
+        <div class="hero" style="background:#141414;">
+          <img src="hero-mtb.png" alt=""/>
+          <div class="overlay" style="background:linear-gradient(to top, rgba(20,20,20,1) 0%, rgba(20,20,20,0.92) 22%, rgba(20,20,20,0.3) 48%, rgba(20,20,20,0.1) 65%, rgba(20,20,20,0.35) 100%);"></div>
+        </div>
+        <div class="status-bar"><span>9:41</span><span>●●● 🔋</span></div>
+        <div class="content">
+          <div class="logo">Sherpaa</div>
+          <div class="tagline">The only coach who was there last time.</div>
+          <div class="cta" style="background:#00E5FF;color:#0A0A0A;">Get Started</div>
+          <div class="secondary">I already have an account</div>
+        </div>
+      </div>
+      <div class="home-indicator" style="background:#00E5FF;"></div>
+    </div>
+    <div class="option-label" style="color:#00E5FF;">Option 3</div>
+    <div class="option-sub">Charcoal + Electric Cyan<br>#141414 · #00E5FF</div>
+    <div class="swatches">
+      <div class="swatch" style="background:#141414;"></div>
+      <div class="swatch" style="background:#00E5FF;"></div>
+      <div class="swatch" style="background:#FFFFFF;"></div>
+    </div>
+  </div>
+
+  <!-- OPTION 4: Off-Black + Bright Mint -->
+  <div class="option">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="welcome">
+        <div class="hero" style="background:#111A14;">
+          <img src="hero-mtb.png" alt=""/>
+          <div class="overlay" style="background:linear-gradient(to top, rgba(17,26,20,1) 0%, rgba(17,26,20,0.92) 22%, rgba(17,26,20,0.3) 48%, rgba(17,26,20,0.1) 65%, rgba(17,26,20,0.4) 100%);"></div>
+        </div>
+        <div class="status-bar"><span>9:41</span><span>●●● 🔋</span></div>
+        <div class="content">
+          <div class="logo">Sherpaa</div>
+          <div class="tagline">The only coach who was there last time.</div>
+          <div class="cta" style="background:#00E887;color:#0A0A0A;">Get Started</div>
+          <div class="secondary">I already have an account</div>
+        </div>
+      </div>
+      <div class="home-indicator" style="background:#00E887;"></div>
+    </div>
+    <div class="option-label" style="color:#00E887;">Option 4</div>
+    <div class="option-sub">Off-Black + Bright Mint<br>#111A14 · #00E887</div>
+    <div class="swatches">
+      <div class="swatch" style="background:#111A14;"></div>
+      <div class="swatch" style="background:#00E887;"></div>
+      <div class="swatch" style="background:#FFFFFF;"></div>
+    </div>
+  </div>
+
+  <!-- OPTION 5: True Black + Gold -->
+  <div class="option">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="welcome">
+        <div class="hero" style="background:#000000;">
+          <img src="hero-mtb.png" alt=""/>
+          <div class="overlay" style="background:linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.92) 22%, rgba(0,0,0,0.3) 48%, rgba(0,0,0,0.1) 65%, rgba(0,0,0,0.4) 100%);"></div>
+        </div>
+        <div class="status-bar"><span>9:41</span><span>●●● 🔋</span></div>
+        <div class="content">
+          <div class="logo" style="color:#F5C842;">Sherpaa</div>
+          <div class="tagline">The only coach who was there last time.</div>
+          <div class="cta" style="background:#F5C842;color:#000000;">Get Started</div>
+          <div class="secondary">I already have an account</div>
+        </div>
+      </div>
+      <div class="home-indicator" style="background:#F5C842;"></div>
+    </div>
+    <div class="option-label" style="color:#F5C842;">Option 5</div>
+    <div class="option-sub">True Black + Gold<br>#000000 · #F5C842</div>
+    <div class="swatches">
+      <div class="swatch" style="background:#111111;border:1px solid #333;"></div>
+      <div class="swatch" style="background:#F5C842;"></div>
+      <div class="swatch" style="background:#F0F0F0;"></div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
