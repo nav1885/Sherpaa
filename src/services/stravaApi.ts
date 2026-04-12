@@ -103,3 +103,30 @@ export async function getSegmentDetail(
 ): Promise<StravaDetailedSegment> {
   return stravaGet<StravaDetailedSegment>(`/segments/${segmentId}`, accessToken);
 }
+
+// ─── Activity types ───────────────────────────────────────────────────────────
+
+export interface StravaActivitySummary {
+  id: number;
+  name: string;
+  distance: number;        // metres
+  moving_time: number;     // seconds
+  start_date: string;      // ISO 8601
+  map: {
+    summary_polyline: string; // encoded polyline, may be empty string for private activities
+  };
+}
+
+/** Fetch the athlete's most recent activities that have a route (non-empty polyline). */
+export async function getRecentActivities(
+  accessToken: string,
+  maxResults = 10,
+): Promise<StravaActivitySummary[]> {
+  const all = await stravaGet<StravaActivitySummary[]>(
+    `/athlete/activities?per_page=30&page=1`,
+    accessToken,
+  );
+  return all
+    .filter(a => a.map?.summary_polyline)
+    .slice(0, maxResults);
+}

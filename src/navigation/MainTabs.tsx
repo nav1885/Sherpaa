@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainTabParamList } from './types';
 import { colors } from '../constants/colors';
 
@@ -18,8 +19,8 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
     Settings: '⚙',
   };
   return (
-    <View style={{ alignItems: 'center', gap: 2 }}>
-      <Text style={{ fontSize: 18, color: focused ? colors.gold : colors.textDim }}>
+    <View style={{ alignItems: 'center' }}>
+      <Text style={{ fontSize: 26, color: focused ? colors.gold : colors.textDim }}>
         {icons[label]}
       </Text>
     </View>
@@ -27,6 +28,9 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
 }
 
 export default function MainTabs() {
+  const insets = useSafeAreaInsets();
+  const bottomPad = Math.max(insets.bottom, 12);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -38,9 +42,9 @@ export default function MainTabs() {
           backgroundColor: colors.bg,
           borderTopColor: colors.borderMuted,
           borderTopWidth: 1,
-          paddingBottom: 20,
+          paddingBottom: bottomPad,
           paddingTop: 10,
-          height: 83,
+          height: 60 + bottomPad,
         },
         tabBarLabelStyle: {
           fontSize: 11,

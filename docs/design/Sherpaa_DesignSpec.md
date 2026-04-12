@@ -432,49 +432,85 @@ Quick Start card (when cues cached): `goldDim` bg + `goldBorder` border + "▶ S
 
 #### Screen 6 — Route Setup
 
+Split 50/50 vertical layout — map on top, panel on bottom. Panel has two states: **(A) Ride picker** before a ride is confirmed, **(B) Segments + goal** after confirmation. The map fills the top half via a WebView running Leaflet with CartoDB Dark Matter tiles (no Google Maps SDK — see tech note below).
+
+**State A — Ride picker (default on entry):**
+
 ```
 ┌─────────────────────────────────────────┐
-│  [Full-screen dark map — mapBg #1A2030] │
-│  [Route polyline: gold #F5C842]         │
-│  [Segment dots: gold (PR) / grey (none)]│
+│  ┌────────────────────────────────────┐ │  ← pills overlay
+│  │ ✦ Strava Route │ Import GPX │ Skip│ │    (absolute, insets.top + 8px)
+│  └────────────────────────────────────┘ │    pill: 32px height, borderRadius 999
 │                                         │
-│  ┌────────────────────────────────────┐ │
-│  │ ✦ Strava Route │ Import GPX │ Skip│ │  ← absolute at top + 108px
-│  └────────────────────────────────────┘ │
-│     pill row, gold active state         │
-│     height: 34px, borderRadius: 999     │
+│    [Leaflet map — dark tiles]           │  ← map half (flex: 1)
+│    [Gold polyline of previewed ride]    │    fitBounds padding:
+│                                         │      topLeft = [24, insets.top + 56]
+│                                         │      bottomRight = [24, 24]
+├─────────────────────────────────────────┤  ← 1px borderStrong divider
 │                                         │
-│  ┌─────────────────────────────────────┐│ ← bottom sheet
-│  │ ────── handle (36×4, borderStrong)  ││
-│  │                                     ││
-│  │  4 segments on route  [4 PR targets]││
-│  │  (17px/700, textPrimary)            ││
-│  │                                     ││
-│  │  ┌─────────────────────────────┐    ││
-│  │  │ ● Hawk Hill    PR target   ││    ││
-│  │  │   2.4 km · ~4:12 est.      ││    ││
-│  │  └─────────────────────────────┘    ││
-│  │  [repeat for each segment, 4 max]  ││
-│  │                                     ││
-│  │  GOAL FOR THIS RIDE                 ││
-│  │  (11px/600, textMuted, ALL CAPS)    ││
-│  │                                     ││
-│  │  [PR Attempt] [Training] [Recovery] ││
-│  │   chips: selected=gold bg,          ││
-│  │          unselected=surface bg      ││
-│  │                                     ││
-│  │  ┌──── Generate Coaching Cues ────┐ ││
-│  │  │   btn-gold · 54px             │ ││
-│  │  └───────────────────────────────┘ ││
-│  └─────────────────────────────────────┘│
+│  Select a ride                          │  ← panel half (flex: 1)
+│  (17px/700, textPrimary)                │
+│  [previewed ride name] (12px, gold)     │
+│                                         │
+│  ┌─────────────────────────────────┐    │
+│  │ Morning Climb to Grizzly    ›   │    │  ← row (selected)
+│  │ Apr 9 · 42.1 km                 │    │    borderLeftWidth: 3, gold
+│  └─────────────────────────────────┘    │    bg: rgba(245,200,66,0.06)
+│  ┌─────────────────────────────────┐    │
+│  │ Paradise Loop recovery      ›   │    │  ← row (default)
+│  │ Apr 7 · 28.4 km                 │    │
+│  └─────────────────────────────────┘    │
+│   [repeat — ScrollView, 10 max]         │
+│                                         │
+│  ┌─────── Use "Morning Climb…" ──────┐  │
+│  │ btn-gold · 52px · disabled until  │  │
+│  │ a ride is selected (opacity 0.35) │  │
+│  └───────────────────────────────────┘  │
 └─────────────────────────────────────────┘
 ```
 
-Sheet: `bg` background, 24px top radius, `borderSubtle` top border, paddingBottom: 40px
+**State B — Segments + goal (after confirmation):**
 
-Goal chips: height 38px, borderRadius: 10px. Selected: `gold` bg, `textOnGold`. Unselected: `surface` bg, `border` border, #666666 text.
+```
+┌─────────────────────────────────────────┐
+│  [pills overlay — same as State A]      │
+│  [Leaflet map — gold polyline + gold    │
+│   circle markers at each matched        │
+│   segment start, radius 80m]            │
+├─────────────────────────────────────────┤
+│  4 segments on route      ← Change ride │
+│  (17px/700)               (13px, gold)  │
+│                                         │
+│  ● Hawk Hill            2.4 km · 4:12  │
+│    best time or "no history"    1.2 km │  ← distance-along-route
+│  ● Paradise Loop        ...            │
+│  ○ Twin Peaks Blvd      (dimmed — no   │
+│                          history)      │
+│  [ScrollView — all matched segments]    │
+│                                         │
+│  GOAL FOR THIS RIDE                     │
+│  (11px/600, textMuted, ALL CAPS)        │
+│                                         │
+│  [PR Attempt] [Training] [Recovery]     │
+│                                         │
+│  ┌──── Generate Coaching Cues ────┐     │
+│  │   btn-gold · 52px              │     │
+│  └────────────────────────────────┘     │
+└─────────────────────────────────────────┘
+```
 
-Segment item: `surface` bg, `border` border, 10px radius, 10px padding. Dot: 8px circle, `gold` for PR target, `textSecondary` for no history. "No history yet" label in `textDim`.
+**Style notes:**
+
+- Root: `bg` background. Map half and panel half each `flex: 1`, separated by 1px `borderStrong` divider.
+- Pills overlay sits over the map, padded by `insets.top + 8px`. Pill: 32px height, `borderRadius: 999`, `rgba(28,28,30,0.85)` bg, `borderStrong` border. Active pill: `gold` bg, `textOnGold` text 700-weight. No back button — user navigates via tab bar / system back.
+- Ride row: 13px vertical padding, 1px bottom `border` divider, chevron (›) in `textDim`. Selected row: `borderLeftWidth: 3` in `gold`, `paddingLeft: 10` to compensate, bg `rgba(245,200,66,0.06)`, name color → `gold`. No check mark. The full row height picks up the gold left edge (must use `borderLeftWidth` on the row, not an absolute-positioned child — the latter does not span full row height reliably on Android).
+- Segment row: 10px vertical padding, gold 8px dot for segments with history, `textDim` dot for no-history.
+- Goal chips: height 36px, `borderRadius: 10px`. Selected: `gold` bg, `textOnGold` text. Unselected: `surface` bg, `border` border.
+- Primary CTA: 52px height, `borderRadius: 999` (pill), `gold` bg, `textOnGold` 16px/700. Disabled state: `opacity: 0.35`.
+
+**Tech note — map rendering:**
+
+The map is rendered via `react-native-webview` hosting Leaflet 1.9.4 with CartoDB Dark Matter tiles (`cartodb-basemaps-a.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png`). **Not** `react-native-maps`. Rationale in `docs/test-reports/android-phase-1-report.md` — Google Maps SDK initializes and crashes on Android without an API key even with `mapType="none"`. The Leaflet approach is free, keyless, dark by default, and matches the app's aesthetic. Route data is injected into the WebView via `injectJavaScript`; the WebView posts a `'ready'` message once Leaflet loads and the React Native side queues route payloads until then.
 
 #### Screen 7 — Cue Generation
 

@@ -204,9 +204,9 @@ The opportunity is a first-mover product that sits at the intersection of three 
 **Preconditions:** Strava connected; at least 1 starred segment in cache; internet connection (WiFi preferred for cue generation)
 
 **Steps:**
-1. App displays Route Setup screen: map view with current location, starred segment overlays
-2. User selects route method: (a) draw/trace on map, (b) pick from Strava saved routes, (c) skip (app will detect segments dynamically during ride)
-3. App identifies which starred segments intersect the selected route; displays list with estimated segment order and distance
+1. App displays Route Setup screen: split layout — top half is a dark map, bottom half is a scrollable list of the rider's 10 most recent Strava activities that include a GPS track
+2. User selects route method: (a) pick a recent Strava ride — tap to preview its polyline on the map, tap "Use this route" to confirm, (b) Import GPX (v1.1 — stub button shows "Coming soon"), (c) Skip (app will detect segments dynamically during ride)
+3. On preview, app decodes the activity's summary polyline, renders it on the map, and identifies which starred segments intersect the route (start + end within 150m of any polyline point); on confirmation, segment list replaces the ride list with estimated segment order and distance along route
 4. App displays Goal Mode selector: PR Attempt | Training Effort | Recovery Ride. Default = Training Effort
 5. User confirms or changes goal mode
 6. App displays cue generation status: "Generating coaching cues for [N] segments… (WiFi recommended)"
@@ -417,15 +417,17 @@ The opportunity is a first-mover product that sits at the intersection of three 
 ### Screen 6 — Route Setup
 
 **Purpose:** Allow user to identify which starred segments are on today's route and trigger pre-generation
-**Layout:** Full-screen map (MapKit) with segment overlays; bottom sheet with controls
+**Layout:** 50/50 vertical split. Top half: dark map (Leaflet rendered in a WebView with CartoDB Dark Matter tiles — no Google Maps SDK, no API key). Bottom half: panel that shows either (a) the ride picker list, or (b) the on-route segment list + goal chips + generate CTA after a ride is confirmed.
 **Components:**
-- Map: current location pin, starred segment polylines (highlighted in brand color), segment start/end markers
-- Bottom sheet: "Today's Route" header, route input method selector (Draw | Strava Route | Dynamic), segment list (ordered by estimated encounter), Goal Mode selector
-- "Generate Coaching Cues" CTA button
-- Segment count badge: "4 segments on this route"
-**User actions:** Tap map to draw route; tap "Strava Route" to import; tap segment in list to preview its data; tap Goal Mode chips (PR Attempt | Training Effort | Recovery); tap "Generate Coaching Cues" → triggers cue generation
-**Empty state (no segments on route):** "No starred segments on this route. Dynamic mode will detect any nearby segments as you ride."
-**Navigation:** Back → Home; "Generate Coaching Cues" → Screen 7 (Cue Generation / Pre-Ride Brief) or directly to Screen 8 (Ready to Ride)
+- Map (top half): renders the previewed/confirmed ride polyline in gold; when confirmed, also renders gold circle markers at each matched segment start. `fitBounds` pads the top by `insets.top + 56px` so the route doesn't hide under the pill overlay
+- Pills overlay (top of map, absolute): `✦ Strava Route` (active), `Import GPX` (shows "Coming soon" alert — stubbed for v1.1), `Skip` (proceeds with all starred segments, no route filter)
+- Panel state A — Ride picker (before confirmation): "Select a ride" header; scrollable list of the 10 most recent Strava activities with a GPS polyline. Tap a row to preview (row highlights with gold left-border, map renders polyline). "Use this ride" primary CTA — disabled until a row is selected, enabled button text shows truncated ride name
+- Panel state B — Segments + goal (after confirmation): "N segments on route" header + "← Change ride" secondary action; ordered segment list with distance-along-route, best time, and no-history dimming; Goal Mode chips (PR Attempt | Training | Recovery); "Generate Coaching Cues" primary CTA
+**User actions:** Tap a ride row to preview; tap "Use this ride" to confirm; tap "Change ride" to reset; tap Goal Mode chips; tap "Generate Coaching Cues" → triggers cue generation; tap Skip pill to bypass route matching entirely
+**Empty states:**
+- No recent Strava activities with polylines: "No recent rides with routes found."
+- No starred segments matched to the route: "No starred segments matched this route." (Generate button still enabled — cues generate for all starred segments)
+**Navigation:** No explicit back button (removed — user navigates via tab bar or system back); "Generate Coaching Cues" → Screen 7 (Cue Generation)
 
 ---
 
