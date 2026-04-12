@@ -3,9 +3,19 @@
  * Mock data is used in Phase 0. Each wrapper is replaced with real
  * data hookups in the corresponding phase (1–5).
  */
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useSegmentStore } from '../store/segmentStore';
+import { useAuthStore } from '../store/authStore';
+import { loadStarredSegments } from '../services/segmentService';
+import { GoalMode } from '../components/RouteSetupScreen';
+import { getRecentActivities, StravaActivitySummary } from '../services/stravaApi';
+import { matchSegmentsToRoute, MatchedSegment } from '../services/routeMatching';
+import { decodePolyline, LatLng } from '../utils/polyline';
+import { generateCuesForSegments } from '../services/cueGeneration';
+import { saveCues } from '../services/cueService';
+import { CueStatus } from '../components/CueGenerationScreen';
 
 import RouteSetupScreen from '../components/RouteSetupScreen';
 import CueGenerationScreen from '../components/CueGenerationScreen';
@@ -23,19 +33,92 @@ type RideNav = StackNavigationProp<RideStackParamList>;
 
 export function RouteSetupScreenWrapper() {
   const navigation = useNavigation<RideNav>();
-  const mockSegments = [
-    { id: '1', name: 'Marin Ave Wall', distanceKm: 1.2, estimatedTimeSec: 272, isPRTarget: true, hasHistory: true },
-    { id: '2', name: 'Grizzly Peak Climb', distanceKm: 3.1, estimatedTimeSec: 612, isPRTarget: true, hasHistory: true },
-    { id: '3', name: 'Wildcat Canyon Sprint', distanceKm: 0.8, estimatedTimeSec: 0, isPRTarget: false, hasHistory: false },
-  ];
+  const [goalMode, setGoalMode] = useState<GoalMode>('training');
+
+  // Segment store
+  const starredSegments = useSegmentStore((s) => s.starredSegments);
+  const setStarredSegments = useSegmentStore((s) => s.setStarredSegments);
+
+  // Auth
+  const stravaAccessToken = useAuthStore((s) => s.stravaAccessToken);
+
+  // Activity picker state
+  const [recentActivities, setRecentActivities] = useState<StravaActivitySummary[]>([]);
+  const [isLoadingActivities, setIsLoadingActivities] = useState(false);
+  const [previewedActivity, setPreviewedActivity] = useState<StravaActivitySummary | null>(null);
+  const [confirmedActivityId, setConfirmedActivityId] = useState<number | null>(null);
+
+  // Route state
+  const [routePolyline, setRoutePolyline] = useState<LatLng[] | null>(null);
+  const [matchedSegments, setMatchedSegments] = useState<MatchedSegment[]>([]);
+
+  // Load segments from SQLite if store is empty
+  useEffect(() => {
+    if (starredSegments.length > 0) return;
+    loadStarredSegments()
+      .then(segs => setStarredSegments(segs))
+      .catch(() => {});
+  }, []);
+
+  // Fetch recent activities on mount
+  useEffect(() => {
+    if (!stravaAccessToken) return;
+    setIsLoadingActivities(true);
+    getRecentActivities(stravaAccessToken)
+      .then(activities => setRecentActivities(activities))
+      .catch(() => setRecentActivities([]))
+      .finally(() => setIsLoadingActivities(false));
+  }, [stravaAccessToken]);
+
+  function handleActivityPreview(activity: StravaActivitySummary) {
+    setPreviewedActivity(activity);
+    const decoded = decodePolyline(activity.map.summary_polyline);
+    setRoutePolyline(decoded);
+    const matched = matchSegmentsToRoute(activity.map.summary_polyline, starredSegments);
+    setMatchedSegments(matched);
+  }
+
+  function handleConfirmActivity() {
+    if (!previewedActivity) return;
+    setConfirmedActivityId(previewedActivity.id);
+    setPreviewedActivity(null);
+  }
+
+  function handleClearPreview() {
+    setPreviewedActivity(null);
+    setRoutePolyline(null);
+    setMatchedSegments([]);
+  }
+
+  function handleClearActivity() {
+    setConfirmedActivityId(null);
+    setPreviewedActivity(null);
+    setRoutePolyline(null);
+    setMatchedSegments([]);
+  }
+
+  function handleGenerateCues() {
+    // If no activity selected (Skip mode), use all starred segments
+    const segmentIds = matchedSegments.length > 0
+      ? matchedSegments.map(ms => ms.segment.id)
+      : starredSegments.map(s => s.id);
+    navigation.navigate('CueGeneration', { segmentIds, goalMode });
+  }
+
   return (
     <RouteSetupScreen
-      segmentsOnRoute={mockSegments}
-      onRouteMethodSelect={() => {}}
-      onGoalModeSelect={() => {}}
-      onGenerateCues={() =>
-        navigation.navigate('CueGeneration', { segmentIds: ['1', '2', '3'], goalMode: 'pr' })
-      }
+      routePolyline={routePolyline}
+      matchedSegments={matchedSegments}
+      recentActivities={recentActivities}
+      isLoadingActivities={isLoadingActivities}
+      previewedActivity={previewedActivity}
+      confirmedActivityId={confirmedActivityId}
+      onActivityPreview={handleActivityPreview}
+      onConfirmActivity={handleConfirmActivity}
+      onClearActivity={handleClearActivity}
+      selectedGoalMode={goalMode}
+      onGoalModeSelect={setGoalMode}
+      onGenerateCues={handleGenerateCues}
       onBack={() => navigation.goBack()}
     />
   );
@@ -45,17 +128,72 @@ export function RouteSetupScreenWrapper() {
 
 export function CueGenerationScreenWrapper() {
   const navigation = useNavigation<RideNav>();
-  // Mock segments for Phase 0
-  const mockSegments = [
-    { id: '1', name: 'Marin Ave Wall', status: 'done' as const },
-    { id: '2', name: 'Grizzly Peak Climb', status: 'active' as const },
-    { id: '3', name: 'Wildcat Canyon Sprint', status: 'pending' as const },
-  ];
+  const route = useRoute<RouteProp<RideStackParamList, 'CueGeneration'>>();
+  const { segmentIds, goalMode } = route.params;
+  const starredSegments = useSegmentStore((s) => s.starredSegments);
+  const jwt = useAuthStore((s) => s.jwt);
+
+  const segmentsForRide = segmentIds
+    .map(id => starredSegments.find(s => s.id === id))
+    .filter((s): s is NonNullable<typeof s> => s !== undefined);
+
+  const [statuses, setStatuses] = useState<Record<string, CueStatus>>(() =>
+    Object.fromEntries(segmentsForRide.map(s => [s.id, 'pending' as CueStatus])),
+  );
+  const hasStartedRef = useRef(false);
+
+  useEffect(() => {
+    if (hasStartedRef.current) return;
+    if (!jwt || segmentsForRide.length === 0) return;
+    hasStartedRef.current = true;
+
+    // Mark all as active while the backend call is in flight.
+    setStatuses(prev => {
+      const next: Record<string, CueStatus> = { ...prev };
+      for (const s of segmentsForRide) next[s.id] = 'active';
+      return next;
+    });
+
+    (async () => {
+      try {
+        const cues = await generateCuesForSegments(segmentsForRide, goalMode, jwt);
+
+        saveCues(
+          cues.map(c => ({
+            segmentId: segmentsForRide[c.segmentIndex].id,
+            goalMode,
+            aggressive: c.aggressive,
+            moderate: c.moderate,
+            recovery: c.recovery,
+          })),
+        );
+
+        const done: Record<string, CueStatus> = {};
+        for (const s of segmentsForRide) done[s.id] = 'done';
+        setStatuses(done);
+
+        setTimeout(() => {
+          navigation.navigate('PreRideBrief', { segmentIds, goalMode });
+        }, 450);
+      } catch (err) {
+        console.error('[cueGen] failed', err);
+        // Fall through to PreRideBrief anyway — generic cues will be used at ride time
+        navigation.navigate('PreRideBrief', { segmentIds, goalMode });
+      }
+    })();
+  }, [jwt, segmentsForRide, goalMode, segmentIds, navigation]);
+
+  const progressSegments = segmentsForRide.map(s => ({
+    id: s.id,
+    name: s.name,
+    status: statuses[s.id] ?? 'pending',
+  }));
+
   return (
     <CueGenerationScreen
-      segments={mockSegments}
-      estimatedSecondsRemaining={12}
-      onSkip={() => navigation.navigate('PreRideBrief', { segmentIds: ['1', '2', '3'], goalMode: 'pr' })}
+      segments={progressSegments}
+      estimatedSecondsRemaining={segmentsForRide.length * 4}
+      onSkip={() => navigation.navigate('PreRideBrief', { segmentIds, goalMode })}
     />
   );
 }
@@ -64,22 +202,43 @@ export function CueGenerationScreenWrapper() {
 
 export function PreRideBriefScreenWrapper() {
   const navigation = useNavigation<RideNav>();
-  const mockSegments = [
-    { id: '1', name: 'Marin Ave Wall', distanceKm: 1.2, cuesReady: 3, bestTimeSec: 272, isPRTarget: true, hasHistory: true },
-    { id: '2', name: 'Grizzly Peak Climb', distanceKm: 3.1, cuesReady: 3, bestTimeSec: 612, isPRTarget: true, hasHistory: true },
-    { id: '3', name: 'Wildcat Canyon Sprint', distanceKm: 0.8, cuesReady: 0, isPRTarget: false, hasHistory: false },
-  ];
+  const route = useRoute<RouteProp<RideStackParamList, 'PreRideBrief'>>();
+  const { segmentIds, goalMode } = route.params;
+  const starredSegments = useSegmentStore((s) => s.starredSegments);
+
+  const segments = segmentIds.map(id => {
+    const seg = starredSegments.find(s => s.id === id);
+    const hasHistory = (seg?.effortCount ?? 0) > 0;
+    return {
+      id,
+      name: seg?.name ?? id,
+      distanceKm: seg ? Math.round((seg.distanceM / 1000) * 10) / 10 : 0,
+      cuesReady: hasHistory ? 3 : 0,
+      bestTimeSec: seg?.bestTimeSec ?? undefined,
+      isPRTarget: hasHistory,
+      hasHistory,
+    };
+  });
+
+  const prTargetCount = segments.filter(s => s.isPRTarget).length;
+  const routeKm = Math.round(segments.reduce((sum, s) => sum + s.distanceKm, 0) * 10) / 10;
+
+  const prNames = segments.filter(s => s.isPRTarget).map(s => s.name);
+  const spokenBriefText = prTargetCount > 0
+    ? `${segments.length} segment${segments.length !== 1 ? 's' : ''} ahead. ${prNames.join(' and ')} ${prTargetCount === 1 ? 'is your PR target' : 'are your PR targets'} today.`
+    : `${segments.length} segment${segments.length !== 1 ? 's' : ''} on your route. No PR targets — ride at your ${goalMode} pace.`;
+
   return (
     <PreRideBriefScreen
-      goalMode="pr"
-      segmentCount={3}
-      prTargetCount={2}
-      routeKm={24.5}
-      spokenBriefText="3 segments ahead. Marin Ave Wall and Grizzly Peak are your PR targets today. You tend to fade on Marin — go out conservative."
+      goalMode={goalMode}
+      segmentCount={segments.length}
+      prTargetCount={prTargetCount}
+      routeKm={routeKm}
+      spokenBriefText={spokenBriefText}
       isAudioPlaying={false}
-      segments={mockSegments}
+      segments={segments}
       onStartRide={() => navigation.navigate('InRide')}
-      onChangeGoalMode={() => {}}
+      onChangeGoalMode={() => navigation.goBack()}
       onBack={() => navigation.goBack()}
     />
   );

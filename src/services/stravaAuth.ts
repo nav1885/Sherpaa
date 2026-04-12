@@ -95,14 +95,18 @@ export async function exchangeStravaCode(code: string, redirectUri: string): Pro
 }
 
 // ─── Step 3 (optional): Refresh an expired Strava access_token ───────────────
+// Requires a valid Sherpaa JWT — the backend will 401 otherwise.
 
-export async function refreshStravaToken(refreshToken: string): Promise<{
-  accessToken: string;
-  expiresAt: number;
-}> {
+export async function refreshStravaToken(
+  refreshToken: string,
+  jwt: string,
+): Promise<{ accessToken: string; expiresAt: number }> {
   const res = await fetch(`${API_URL}/auth/strava/refresh`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${jwt}`,
+    },
     body: JSON.stringify({ refreshToken }),
   });
 

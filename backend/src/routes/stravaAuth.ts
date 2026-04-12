@@ -14,6 +14,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import jwt from 'jsonwebtoken';
 import { randomUUID } from 'node:crypto';
+import { requireAuth } from '../middleware/auth';
 
 const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID ?? '';
 const STRAVA_CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET ?? '';
@@ -140,13 +141,11 @@ export default async function stravaAuthRoutes(app: FastifyInstance) {
     },
   );
 
-  // POST /auth/strava/refresh
-  app.post(
+  // POST /auth/strava/refresh  ← requires a valid Sherpaa JWT
+  app.post<{ Body: { refreshToken: string } }>(
     '/auth/strava/refresh',
-    async (
-      req: FastifyRequest<{ Body: { refreshToken: string } }>,
-      reply: FastifyReply,
-    ) => {
+    { preHandler: requireAuth },
+    async (req, reply) => {
       const { refreshToken } = req.body;
 
       if (!refreshToken) {
