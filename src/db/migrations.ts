@@ -111,6 +111,18 @@ export async function runMigrations(): Promise<void> {
   `);
 
   await db.run(sql`
+    CREATE TABLE IF NOT EXISTS cached_activities (
+      strava_id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      distance REAL NOT NULL,
+      moving_time INTEGER NOT NULL,
+      start_date TEXT NOT NULL,
+      summary_polyline TEXT NOT NULL,
+      fetched_at INTEGER NOT NULL
+    )
+  `);
+
+  await db.run(sql`
     CREATE TABLE IF NOT EXISTS pacing_models (
       id TEXT PRIMARY KEY,
       segment_id TEXT NOT NULL UNIQUE REFERENCES segments(id),

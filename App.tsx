@@ -7,16 +7,23 @@ import { StatusBar } from 'expo-status-bar';
 import RootNavigator from './src/navigation/RootNavigator';
 import { runMigrations } from './src/db/migrations';
 import { colors } from './src/constants/colors';
+import { loadStarredSegments } from './src/services/segmentService';
+import { useSegmentStore } from './src/store/segmentStore';
 
 export default function App() {
   const [dbReady, setDbReady] = useState(false);
 
   useEffect(() => {
     runMigrations()
-      .then(() => setDbReady(true))
+      .then(async () => {
+        const segs = await loadStarredSegments();
+        if (segs.length > 0) {
+          useSegmentStore.getState().setStarredSegments(segs);
+        }
+        setDbReady(true);
+      })
       .catch((err) => {
         console.error('DB migration failed:', err);
-        // Still let the app boot — non-fatal in development
         setDbReady(true);
       });
   }, []);

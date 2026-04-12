@@ -104,6 +104,23 @@ export const cues = sqliteTable(
   })
 );
 
+// ─── Cached Activities ───────────────────────────────────────────────────────
+
+export const cachedActivities = sqliteTable(
+  'cached_activities',
+  {
+    stravaId: integer('strava_id').primaryKey(),
+    name: text('name').notNull(),
+    distance: real('distance').notNull(),
+    movingTime: integer('moving_time').notNull(),
+    startDate: text('start_date').notNull(),
+    summaryPolyline: text('summary_polyline').notNull(),
+    fetchedAt: integer('fetched_at').notNull(),
+  }
+);
+
+export type CachedActivity = typeof cachedActivities.$inferSelect;
+
 // ─── Pacing Model ─────────────────────────────────────────────────────────────
 
 export const pacingModels = sqliteTable(

@@ -55,3 +55,22 @@ export function getCueForSegment(segmentId: string, goalMode: GoalMode): Cue | n
     .get();
   return row ?? null;
 }
+
+const CUE_STALE_SEC = 7 * 24 * 60 * 60; // 7 days
+
+/** Return segment IDs that already have fresh cues for this goalMode. */
+export function getExistingCueSegmentIds(segmentIds: string[], goalMode: GoalMode): Set<string> {
+  const nowSec = Math.floor(Date.now() / 1000);
+  const fresh = new Set<string>();
+  for (const id of segmentIds) {
+    const row = db
+      .select({ generatedAt: cues.generatedAt })
+      .from(cues)
+      .where(and(eq(cues.segmentId, id), eq(cues.goalMode, goalMode)))
+      .get();
+    if (row && (nowSec - row.generatedAt) < CUE_STALE_SEC) {
+      fresh.add(id);
+    }
+  }
+  return fresh;
+}

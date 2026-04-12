@@ -10,11 +10,12 @@ import { useSegmentStore } from '../store/segmentStore';
 import { useAuthStore } from '../store/authStore';
 import { loadStarredSegments } from '../services/segmentService';
 import { GoalMode } from '../components/RouteSetupScreen';
-import { getRecentActivities, StravaActivitySummary } from '../services/stravaApi';
+import { StravaActivitySummary } from '../services/stravaApi';
 import { matchSegmentsToRoute, MatchedSegment } from '../services/routeMatching';
 import { decodePolyline, LatLng } from '../utils/polyline';
 import { generateCuesForSegments } from '../services/cueGeneration';
-import { saveCues } from '../services/cueService';
+import { saveCues, getExistingCueSegmentIds } from '../services/cueService';
+import { getCachedActivities, refreshActivities } from '../services/activityService';
 import { CueStatus } from '../components/CueGenerationScreen';
 
 import RouteSetupScreen from '../components/RouteSetupScreen';
@@ -42,8 +43,10 @@ export function RouteSetupScreenWrapper() {
   // Auth
   const stravaAccessToken = useAuthStore((s) => s.stravaAccessToken);
 
-  // Activity picker state
-  const [recentActivities, setRecentActivities] = useState<StravaActivitySummary[]>([]);
+  // Activity picker state — show cached immediately
+  const [recentActivities, setRecentActivities] = useState<StravaActivitySummary[]>(
+    () => getCachedActivities(),
+  );
   const [isLoadingActivities, setIsLoadingActivities] = useState(false);
   const [previewedActivity, setPreviewedActivity] = useState<StravaActivitySummary | null>(null);
   const [confirmedActivityId, setConfirmedActivityId] = useState<number | null>(null);
@@ -52,7 +55,7 @@ export function RouteSetupScreenWrapper() {
   const [routePolyline, setRoutePolyline] = useState<LatLng[] | null>(null);
   const [matchedSegments, setMatchedSegments] = useState<MatchedSegment[]>([]);
 
-  // Load segments from SQLite if store is empty
+  // Load segments from SQLite if store is empty (fallback — normally hydrated in App.tsx)
   useEffect(() => {
     if (starredSegments.length > 0) return;
     loadStarredSegments()
@@ -60,13 +63,13 @@ export function RouteSetupScreenWrapper() {
       .catch(() => {});
   }, []);
 
-  // Fetch recent activities on mount
+  // Background refresh activities from Strava
   useEffect(() => {
     if (!stravaAccessToken) return;
-    setIsLoadingActivities(true);
-    getRecentActivities(stravaAccessToken)
+    if (recentActivities.length === 0) setIsLoadingActivities(true);
+    refreshActivities(stravaAccessToken)
       .then(activities => setRecentActivities(activities))
-      .catch(() => setRecentActivities([]))
+      .catch(() => {})
       .finally(() => setIsLoadingActivities(false));
   }, [stravaAccessToken]);
 
@@ -137,30 +140,45 @@ export function CueGenerationScreenWrapper() {
     .map(id => starredSegments.find(s => s.id === id))
     .filter((s): s is NonNullable<typeof s> => s !== undefined);
 
+  // Check which segments already have fresh cached cues
+  const cachedIds = getExistingCueSegmentIds(segmentIds, goalMode);
+  const segmentsToGenerate = segmentsForRide.filter(s => !cachedIds.has(s.id));
+
   const [statuses, setStatuses] = useState<Record<string, CueStatus>>(() =>
-    Object.fromEntries(segmentsForRide.map(s => [s.id, 'pending' as CueStatus])),
+    Object.fromEntries(segmentsForRide.map(s => [
+      s.id,
+      cachedIds.has(s.id) ? 'done' as CueStatus : 'pending' as CueStatus,
+    ])),
   );
   const hasStartedRef = useRef(false);
 
   useEffect(() => {
     if (hasStartedRef.current) return;
-    if (!jwt || segmentsForRide.length === 0) return;
     hasStartedRef.current = true;
 
-    // Mark all as active while the backend call is in flight.
+    // All cues already cached — skip straight to PreRideBrief
+    if (segmentsToGenerate.length === 0) {
+      setTimeout(() => {
+        navigation.navigate('PreRideBrief', { segmentIds, goalMode });
+      }, 300);
+      return;
+    }
+
+    if (!jwt) return;
+
     setStatuses(prev => {
       const next: Record<string, CueStatus> = { ...prev };
-      for (const s of segmentsForRide) next[s.id] = 'active';
+      for (const s of segmentsToGenerate) next[s.id] = 'active';
       return next;
     });
 
     (async () => {
       try {
-        const cues = await generateCuesForSegments(segmentsForRide, goalMode, jwt);
+        const cues = await generateCuesForSegments(segmentsToGenerate, goalMode, jwt);
 
         saveCues(
           cues.map(c => ({
-            segmentId: segmentsForRide[c.segmentIndex].id,
+            segmentId: segmentsToGenerate[c.segmentIndex].id,
             goalMode,
             aggressive: c.aggressive,
             moderate: c.moderate,
@@ -177,11 +195,10 @@ export function CueGenerationScreenWrapper() {
         }, 450);
       } catch (err) {
         console.error('[cueGen] failed', err);
-        // Fall through to PreRideBrief anyway — generic cues will be used at ride time
         navigation.navigate('PreRideBrief', { segmentIds, goalMode });
       }
     })();
-  }, [jwt, segmentsForRide, goalMode, segmentIds, navigation]);
+  }, [jwt, segmentsToGenerate.length, goalMode, segmentIds, navigation]);
 
   const progressSegments = segmentsForRide.map(s => ({
     id: s.id,
@@ -189,10 +206,12 @@ export function CueGenerationScreenWrapper() {
     status: statuses[s.id] ?? 'pending',
   }));
 
+  const uncachedCount = segmentsToGenerate.length;
+
   return (
     <CueGenerationScreen
       segments={progressSegments}
-      estimatedSecondsRemaining={segmentsForRide.length * 4}
+      estimatedSecondsRemaining={uncachedCount * 4}
       onSkip={() => navigation.navigate('PreRideBrief', { segmentIds, goalMode })}
     />
   );
