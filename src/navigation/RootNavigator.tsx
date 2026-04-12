@@ -10,11 +10,20 @@ import RideStack from './RideStack';
 
 const Root = createStackNavigator<RootStackParamList>();
 
+// Deep link config — tells NavigationContainer to accept sherpaa:// URLs
+// so that the app resumes (not restarts) when Strava redirects back.
+const linking = {
+  prefixes: ['sherpaa://'],
+  // No screen mapping needed — we handle sherpaa://connected manually
+  // via Linking.addEventListener in StravaConnectWrapper.
+  config: { screens: {} },
+};
+
 export default function RootNavigator() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <Root.Navigator screenOptions={{ headerShown: false }}>
         {!isAuthenticated ? (
           <Root.Screen name="Auth" component={AuthStack} />

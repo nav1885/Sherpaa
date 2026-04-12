@@ -6,7 +6,17 @@ import { GoalMode } from '../components/RouteSetupScreen';
 export type AuthStackParamList = {
   Welcome: undefined;
   Carousel: undefined;
-  Connected: undefined;
+  StravaConnect: undefined;
+  Connected: {
+    athleteName: string;
+    avatarUrl?: string;
+    stravaAthleteId: string;
+    riderId: string;
+    jwt: string;
+    stravaAccessToken: string;
+    stravaRefreshToken: string;
+    stravaTokenExpiresAt: number;
+  };
 };
 
 // ─── Ride Stack (modal on top of Main tabs) ───────────────────────────────────
