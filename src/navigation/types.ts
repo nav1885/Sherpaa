@@ -25,7 +25,7 @@ export type RideStackParamList = {
   RouteSetup: undefined;
   CueGeneration: { segmentIds: string[]; goalMode: GoalMode };
   PreRideBrief: { segmentIds: string[]; goalMode: GoalMode };
-  InRide: undefined;
+  InRide: { segmentIds: string[]; goalMode: GoalMode };
   SegmentResult: {
     segmentId: string;
     segmentName: string;

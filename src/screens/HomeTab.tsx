@@ -144,7 +144,7 @@ export default function HomeTab() {
       isRefreshing={isRefreshing}
       onRefresh={handleRefresh}
       onPlanRide={() => navigation.navigate('Ride', { screen: 'RouteSetup' })}
-      onStartRide={() => navigation.navigate('Ride', { screen: 'InRide' })}
+      onStartRide={() => navigation.navigate('Ride', { screen: 'RouteSetup' })}
       onRideTap={(_rideId) => navigation.navigate('Ride', { screen: 'PostRideSummary', params: { rideId: _rideId } })}
     />
   );

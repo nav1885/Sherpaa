@@ -14,11 +14,14 @@ import { TTL } from '../constants/ttl';
 import { GoalMode } from '../components/RouteSetupScreen';
 import { StravaActivitySummary } from '../services/stravaApi';
 import { matchSegmentsToRoute, MatchedSegment } from '../services/routeMatching';
-import { decodePolyline, LatLng } from '../utils/polyline';
+import { decodePolyline, LatLng, haversineMetres } from '../utils/polyline';
 import { generateCuesForSegments } from '../services/cueGeneration';
 import { saveCues, getExistingCueSegmentIds } from '../services/cueService';
 import { getCachedActivities, refreshActivities } from '../services/activityService';
 import { syncSegmentDetails } from '../services/segmentSync';
+import { startRideEngine, stopRideEngine, getRideStartTime } from '../services/rideEngine';
+import { saveRide, generateDebrief } from '../services/rideService';
+import { speak } from '../services/ttsService';
 import { CueStatus } from '../components/CueGenerationScreen';
 
 import RouteSetupScreen from '../components/RouteSetupScreen';
@@ -72,17 +75,24 @@ export function RouteSetupScreenWrapper() {
 
   // Staleness-gated activity refresh
   useEffect(() => {
+    console.log('[RouteSetup] activity effect — token:', stravaAccessToken ? 'yes' : 'null',
+      'lastFetch:', lastActivityFetchAt, 'cached:', recentActivities.length);
     if (!stravaAccessToken) return;
 
     const nowSec = Math.floor(Date.now() / 1000);
     const isStale = !lastActivityFetchAt || (nowSec - lastActivityFetchAt) > TTL.ACTIVITY_SEC;
     const justRode = lastRideEndedAt && (!lastActivityFetchAt || lastRideEndedAt / 1000 > lastActivityFetchAt);
 
-    if (!isStale && !justRode && recentActivities.length > 0) return;
+    if (!isStale && !justRode && recentActivities.length > 0) {
+      console.log('[RouteSetup] cache fresh, skipping');
+      return;
+    }
 
+    console.log('[RouteSetup] fetching activities...');
     if (recentActivities.length === 0) setIsLoadingActivities(true);
     refreshActivities(stravaAccessToken)
       .then(activities => {
+        console.log('[RouteSetup] got', activities.length, 'activities');
         setRecentActivities(activities);
         setLastActivityFetchAt(Math.floor(Date.now() / 1000));
       })
@@ -312,7 +322,7 @@ export function PreRideBriefScreenWrapper() {
       spokenBriefText={spokenBriefText}
       isAudioPlaying={false}
       segments={segments}
-      onStartRide={() => navigation.navigate('InRide')}
+      onStartRide={() => navigation.navigate('InRide', { segmentIds, goalMode })}
       onChangeGoalMode={() => navigation.goBack()}
       onBack={() => navigation.goBack()}
     />
@@ -323,15 +333,76 @@ export function PreRideBriefScreenWrapper() {
 
 export function InRideScreenWrapper() {
   const navigation = useNavigation<RideNav>();
+  const route = useRoute<RouteProp<RideStackParamList, 'InRide'>>();
+  const { segmentIds, goalMode } = route.params;
+
+  const currentPosition = useRideStore((s) => s.currentPosition);
+  const gpsLocked = useRideStore((s) => s.gpsLocked);
+  const distanceKm = useRideStore((s) => s.distanceKm);
+  const audioActive = useRideStore((s) => s.audioActive);
+  const nextSegmentId = useRideStore((s) => s.nextSegmentId);
+  const rideStartedAt = useRideStore((s) => s.rideStartedAt);
+  const starredSegments = useSegmentStore((s) => s.starredSegments);
+
+  const [elapsedTime, setElapsedTime] = useState('0:00:00');
+  const engineStartedRef = useRef(false);
+
+  // Start ride engine on mount
+  useEffect(() => {
+    if (engineStartedRef.current) return;
+    engineStartedRef.current = true;
+
+    console.log('[InRide] starting engine with', segmentIds.length, 'segments');
+    startRideEngine(segmentIds, goalMode).then(ok => {
+      if (!ok) console.warn('[InRide] GPS permission denied');
+      else console.log('[InRide] engine started');
+    });
+
+    return () => {
+      stopRideEngine();
+    };
+  }, []);
+
+  // Elapsed time ticker — fires when rideStartedAt is set by the engine
+  useEffect(() => {
+    if (!rideStartedAt) return;
+    const tick = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - rideStartedAt) / 1000);
+      const h = Math.floor(elapsed / 3600);
+      const m = Math.floor((elapsed % 3600) / 60);
+      const s = elapsed % 60;
+      setElapsedTime(`${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [rideStartedAt]);
+
+  // Derive next segment info for UI
+  const nextSegment = useMemo(() => {
+    if (!nextSegmentId) return undefined;
+    const seg = starredSegments.find(s => s.id === nextSegmentId);
+    if (!seg || !currentPosition) return seg ? { name: seg.name, distanceKm: 0 } : undefined;
+    const distM = haversineMetres(currentPosition, { lat: seg.startLat, lng: seg.startLng });
+    return { name: seg.name, distanceKm: Math.round(distM / 100) / 10 };
+  }, [nextSegmentId, currentPosition, starredSegments]);
+
+  function handleEndRide() {
+    stopRideEngine();
+    const store = useRideStore.getState();
+    store.endRide();
+    // Generate a ride ID for the summary
+    const rideId = `ride_${Date.now()}`;
+    navigation.navigate('PostRideSummary', { rideId });
+  }
+
   return (
     <InRideScreen
-      elapsedTime="0:00:00"
-      speedKmh={0}
-      distanceKm={0}
-      gpsLocked={false}
-      audioActive={false}
-      nextSegment={{ name: 'Marin Ave Wall', distanceKm: 1.2 }}
-      onEndRide={() => navigation.navigate('PostRideSummary', { rideId: 'mock-ride-id' })}
+      elapsedTime={elapsedTime}
+      speedKmh={currentPosition?.speedKmh ?? 0}
+      distanceKm={distanceKm}
+      gpsLocked={gpsLocked}
+      audioActive={audioActive}
+      nextSegment={nextSegment}
+      onEndRide={handleEndRide}
     />
   );
 }
@@ -357,34 +428,124 @@ export function SegmentResultScreenWrapper() {
 
 export function PostRideSummaryScreenWrapper() {
   const navigation = useNavigation<RideNav>();
-  const mockResults = [
-    {
-      id: '1', name: 'Marin Ave Wall', timeSec: 268, isNewPR: true,
-      gapToPreSeconds: -4, prTimeSec: 272, wasSkipped: false,
-      cueTextPlayed: "You tend to fade on the back half — go out 5% easier than feels right.",
-    },
-    {
-      id: '2', name: 'Grizzly Peak Climb', timeSec: 631, isNewPR: false,
-      gapToPreSeconds: 19, prTimeSec: 612, wasSkipped: false,
-    },
-    {
-      id: '3', name: 'Wildcat Canyon Sprint', timeSec: 0, isNewPR: false,
-      gapToPreSeconds: 0, wasSkipped: true,
-    },
-  ];
+  const rider = useAuthStore((s) => s.rider);
+  const completedSegments = useRideStore((s) => s.completedSegments);
+  const rideStartedAt = useRideStore((s) => s.rideStartedAt);
+  const distanceKm = useRideStore((s) => s.distanceKm);
+  const goalMode = useRideStore((s) => s.goalMode);
+  const routeSegmentIds = useRideStore((s) => s.routeSegmentIds);
+  const gpxTrackPoints = useRideStore((s) => s.gpxTrackPoints);
+  const starredSegments = useSegmentStore((s) => s.starredSegments);
+
+  const endedAt = useRideStore((s) => s.lastRideEndedAt) ?? Date.now();
+  const durationSec = rideStartedAt ? Math.floor((endedAt - rideStartedAt) / 1000) : 0;
+
+  // Save ride to DB on mount (once)
+  const savedRef = useRef(false);
+  useEffect(() => {
+    if (savedRef.current || !rider) return;
+    savedRef.current = true;
+    try {
+      saveRide({
+        riderId: rider.id,
+        goalMode,
+        startedAt: rideStartedAt ?? Date.now(),
+        endedAt,
+        distanceKm,
+        elevationM: 0,
+        completedSegments,
+        gpxTrackPoints,
+      });
+      console.log('[PostRide] ride saved to DB');
+    } catch (err) {
+      console.error('[PostRide] save failed:', err);
+    }
+  }, []);
+
+  // Build segment results — include skipped segments
+  const segmentResults = useMemo(() => {
+    const completedIds = new Set(completedSegments.map(c => c.segmentId));
+    const results: Array<{
+      id: string; name: string; timeSec: number; isNewPR: boolean;
+      gapToPreSeconds: number; prTimeSec?: number; wasSkipped: boolean;
+      cueTextPlayed?: string;
+    }> = [];
+
+    // Add completed segments
+    for (const c of completedSegments) {
+      results.push({
+        id: c.segmentId,
+        name: c.name,
+        timeSec: c.timeSec,
+        isNewPR: c.isNewPR,
+        gapToPreSeconds: c.gapToPreSeconds,
+        prTimeSec: c.prTimeSec,
+        wasSkipped: false,
+        cueTextPlayed: c.cueTextPlayed,
+      });
+    }
+
+    // Add skipped segments (on route but not completed)
+    for (const segId of routeSegmentIds) {
+      if (completedIds.has(segId)) continue;
+      const seg = starredSegments.find(s => s.id === segId);
+      results.push({
+        id: segId,
+        name: seg?.name ?? 'Unknown segment',
+        timeSec: 0,
+        isNewPR: false,
+        gapToPreSeconds: 0,
+        wasSkipped: true,
+      });
+    }
+
+    return results;
+  }, [completedSegments, routeSegmentIds, starredSegments]);
+
+  // Generate debrief text
+  const debriefText = useMemo(
+    () => generateDebrief(completedSegments, durationSec, distanceKm),
+    [completedSegments, durationSec, distanceKm],
+  );
+
+  // Speak debrief on mount
+  const spokenRef = useRef(false);
+  useEffect(() => {
+    if (spokenRef.current || !debriefText) return;
+    spokenRef.current = true;
+    speak(debriefText);
+  }, [debriefText]);
+
+  const rideName = useMemo(() => {
+    const hour = new Date(rideStartedAt ?? Date.now()).getHours();
+    if (hour < 12) return 'Morning Ride';
+    if (hour < 17) return 'Afternoon Ride';
+    return 'Evening Ride';
+  }, [rideStartedAt]);
+
+  const rideDate = useMemo(() => {
+    const d = new Date(rideStartedAt ?? Date.now());
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }, [rideStartedAt]);
+
+  function handleDone() {
+    useRideStore.getState().resetRide();
+    navigation.getParent()?.navigate('Main');
+  }
+
   return (
     <PostRideSummaryScreen
-      rideName="Morning Ride"
-      rideDate="Apr 11"
-      distanceKm={24.5}
-      durationSec={5400}
-      elevationM={610}
-      segmentResults={mockResults}
+      rideName={rideName}
+      rideDate={rideDate}
+      distanceKm={distanceKm}
+      durationSec={durationSec}
+      elevationM={0}
+      segmentResults={segmentResults}
       stravaSynced={false}
-      debriefText="Strong ride today — you set a new PR on Marin Ave Wall, beating your best by 4 seconds. You lost time on Grizzly in the final third. Next time, hold back 5% on the lower slopes."
-      onListenDebrief={() => {}}
+      debriefText={debriefText}
+      onListenDebrief={() => speak(debriefText)}
       onShare={() => {}}
-      onDone={() => navigation.getParent()?.navigate('Main')}
+      onDone={handleDone}
     />
   );
 }

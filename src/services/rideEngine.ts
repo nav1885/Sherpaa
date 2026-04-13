@@ -1,0 +1,352 @@
+/**
+ * Ride Engine — GPS tracking + segment detection + TTS cues.
+ *
+ * Lifecycle: startRideEngine() → runs until stopRideEngine().
+ * Updates rideStore with live position, speed, distance, segment state.
+ * Fires TTS cues at segment approach (500m) and on segment completion.
+ */
+
+import * as Location from 'expo-location';
+import { useRideStore } from '../store/rideStore';
+import { useSegmentStore } from '../store/segmentStore';
+import { Segment } from '../store/segmentStore';
+import { getCueForSegment } from './cueService';
+import { speak, stop as stopTTS } from './ttsService';
+import { haversineMetres, decodePolyline, LatLng } from '../utils/polyline';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface SegmentTracker {
+  segment: Segment;
+  startCoord: LatLng;
+  endCoord: LatLng;
+  polylinePoints: LatLng[] | null; // decoded polyline, null if no polyline
+  distanceM: number;
+  approachCueFired: boolean;
+  startCueFired: boolean;
+  enteredAt: number | null; // timestamp ms
+  checkpointsFired: Set<number>; // 25, 50, 75
+}
+
+type GoalMode = 'pr' | 'training' | 'recovery';
+
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const APPROACH_RADIUS_M = 500;
+const SEGMENT_START_RADIUS_M = 40;
+const SEGMENT_END_RADIUS_M = 40;
+const GPS_INTERVAL_MS = 1000;
+
+// ─── Module state ────────────────────────────────────────────────────────────
+
+let _locationSub: Location.LocationSubscription | null = null;
+let _timerInterval: ReturnType<typeof setInterval> | null = null;
+let _trackers: SegmentTracker[] = [];
+let _activeTracker: SegmentTracker | null = null;
+let _goalMode: GoalMode = 'training';
+let _prevPosition: LatLng | null = null;
+let _totalDistanceM = 0;
+let _startTimeMs = 0;
+
+// ─── Public API ──────────────────────────────────────────────────────────────
+
+export async function startRideEngine(
+  segmentIds: string[],
+  goalMode: GoalMode,
+): Promise<boolean> {
+  // Request permissions
+  const { status } = await Location.requestForegroundPermissionsAsync();
+  if (status !== 'granted') return false;
+
+  _goalMode = goalMode;
+  _prevPosition = null;
+  _totalDistanceM = 0;
+  _startTimeMs = Date.now();
+  _activeTracker = null;
+
+  // Build trackers from segment store
+  const allSegments = useSegmentStore.getState().starredSegments;
+  _trackers = segmentIds
+    .map(id => allSegments.find(s => s.id === id))
+    .filter((s): s is Segment => s !== undefined)
+    .map(seg => ({
+      segment: seg,
+      startCoord: { lat: seg.startLat, lng: seg.startLng },
+      endCoord: { lat: seg.endLat, lng: seg.endLng },
+      polylinePoints: seg.polyline ? decodePolyline(seg.polyline) : null,
+      distanceM: seg.distanceM,
+      approachCueFired: false,
+      startCueFired: false,
+      enteredAt: null,
+      checkpointsFired: new Set(),
+    }));
+
+  const store = useRideStore.getState();
+  store.startRide(goalMode, segmentIds);
+
+  // Speak start cue
+  const segCount = _trackers.length;
+  speak(`GPS locked. ${segCount} segment${segCount !== 1 ? 's' : ''} loaded. Goal: ${goalMode === 'pr' ? 'P R' : goalMode}. Let's go.`);
+  store.setAudioActive(true);
+
+  // Start GPS tracking
+  _locationSub = await Location.watchPositionAsync(
+    {
+      accuracy: Location.Accuracy.BestForNavigation,
+      timeInterval: GPS_INTERVAL_MS,
+      distanceInterval: 0,
+    },
+    onLocationUpdate,
+  );
+
+  // Elapsed time ticker
+  _timerInterval = setInterval(updateElapsedTime, 1000);
+
+  return true;
+}
+
+export function stopRideEngine(): void {
+  if (_locationSub) {
+    _locationSub.remove();
+    _locationSub = null;
+  }
+  if (_timerInterval) {
+    clearInterval(_timerInterval);
+    _timerInterval = null;
+  }
+  stopTTS();
+  _trackers = [];
+  _activeTracker = null;
+  _prevPosition = null;
+}
+
+// ─── GPS callback ────────────────────────────────────────────────────────────
+
+function onLocationUpdate(location: Location.LocationObject): void {
+  const { latitude: lat, longitude: lng, accuracy, speed } = location.coords;
+  const pos: LatLng = { lat, lng };
+  const speedKmh = speed != null && speed >= 0 ? speed * 3.6 : 0;
+  const accuracyM = accuracy ?? 999;
+
+  // Accumulate distance
+  if (_prevPosition) {
+    const delta = haversineMetres(_prevPosition, pos);
+    // Only count if moving (> 1m) and GPS is reasonably accurate
+    if (delta > 1 && delta < 200 && accuracyM < 30) {
+      _totalDistanceM += delta;
+    }
+  }
+  _prevPosition = pos;
+
+  // Update store
+  const store = useRideStore.getState();
+  store.updatePosition({
+    lat,
+    lng,
+    speedKmh,
+    accuracyM,
+    timestamp: Date.now(),
+  });
+
+  // Update distance in store
+  const distanceKm = _totalDistanceM / 1000;
+  // We set distanceKm by accessing the raw set — rideStore doesn't expose a setDistanceKm
+  // so we use the internal zustand set via the store API
+  useRideStore.setState({ distanceKm });
+
+  // ─── Segment detection ───────────────────────────────────────────────
+  if (_activeTracker) {
+    handleActiveSegment(pos, _activeTracker);
+  } else {
+    handleBetweenSegments(pos);
+  }
+}
+
+// ─── Between segments: detect approach + entry ───────────────────────────────
+
+function handleBetweenSegments(pos: LatLng): void {
+  for (const tracker of _trackers) {
+    // Skip already completed segments
+    const store = useRideStore.getState();
+    const completed = store.completedSegments.some(c => c.segmentId === tracker.segment.id);
+    if (completed) continue;
+
+    const distToStart = haversineMetres(pos, tracker.startCoord);
+
+    // Approach cue at 500m
+    if (!tracker.approachCueFired && distToStart < APPROACH_RADIUS_M && distToStart > SEGMENT_START_RADIUS_M) {
+      tracker.approachCueFired = true;
+      fireApproachCue(tracker);
+    }
+
+    // Segment start detection
+    if (distToStart < SEGMENT_START_RADIUS_M) {
+      enterSegment(tracker);
+      return; // only one segment active at a time
+    }
+  }
+}
+
+// ─── Active segment: track progress + detect end ─────────────────────────────
+
+function handleActiveSegment(pos: LatLng, tracker: SegmentTracker): void {
+  if (!tracker.enteredAt) return;
+
+  const distToEnd = haversineMetres(pos, tracker.endCoord);
+  const elapsedSec = (Date.now() - tracker.enteredAt) / 1000;
+
+  // Estimate progress along segment
+  const distFromStart = haversineMetres(pos, tracker.startCoord);
+  const totalDist = tracker.distanceM || haversineMetres(tracker.startCoord, tracker.endCoord);
+  const progress = Math.min(1, Math.max(0, distFromStart / totalDist));
+
+  // PR gap estimation (simple: compare elapsed vs best time at this progress point)
+  let gapSec = 0;
+  const bestTime = tracker.segment.bestTimeSec;
+  if (bestTime) {
+    const expectedElapsed = bestTime * progress;
+    gapSec = Math.round(elapsedSec - expectedElapsed); // positive = behind PR
+  }
+
+  // Update store
+  const store = useRideStore.getState();
+  store.setActiveSegmentMetrics(elapsedSec, progress * 100, gapSec);
+
+  // Split checkpoint cues (25%, 50%, 75%)
+  for (const pct of [25, 50, 75]) {
+    if (!tracker.checkpointsFired.has(pct) && progress * 100 >= pct) {
+      tracker.checkpointsFired.add(pct);
+      fireSplitCue(tracker, pct, elapsedSec, gapSec);
+    }
+  }
+
+  // Segment end detection
+  if (distToEnd < SEGMENT_END_RADIUS_M) {
+    exitSegment(tracker, elapsedSec, gapSec);
+  }
+}
+
+// ─── Segment lifecycle ───────────────────────────────────────────────────────
+
+function enterSegment(tracker: SegmentTracker): void {
+  tracker.enteredAt = Date.now();
+  _activeTracker = tracker;
+
+  const store = useRideStore.getState();
+  store.setSegmentState(tracker.segment.id, 'active');
+  // Populate segment name in the store
+  useRideStore.setState(state => ({
+    currentSegment: state.currentSegment
+      ? { ...state.currentSegment, name: tracker.segment.name }
+      : state.currentSegment,
+  }));
+
+  // Start cue
+  if (!tracker.startCueFired) {
+    tracker.startCueFired = true;
+    speak(`${tracker.segment.name}. Go.`);
+  }
+}
+
+function exitSegment(
+  tracker: SegmentTracker,
+  elapsedSec: number,
+  gapSec: number,
+): void {
+  const timeSec = Math.round(elapsedSec);
+  const bestTime = tracker.segment.bestTimeSec;
+  const isNewPR = bestTime ? timeSec < bestTime : true; // first effort is always a "PR"
+  const gapToPreSeconds = bestTime ? timeSec - bestTime : 0; // negative = faster than PR
+
+  // Result cue
+  const mins = Math.floor(timeSec / 60);
+  const secs = timeSec % 60;
+  const timeStr = mins > 0 ? `${mins}:${secs.toString().padStart(2, '0')}` : `${secs} seconds`;
+  if (isNewPR && bestTime) {
+    speak(`${timeStr}. New P R. ${Math.abs(gapToPreSeconds)} seconds faster.`);
+  } else if (bestTime) {
+    speak(`${timeStr}. ${Math.abs(gapToPreSeconds)} seconds off P R.`);
+  } else {
+    speak(`${timeStr}. First effort recorded.`);
+  }
+
+  // Update store
+  const store = useRideStore.getState();
+  store.completeSegment({
+    segmentId: tracker.segment.id,
+    name: tracker.segment.name,
+    timeSec,
+    isNewPR,
+    gapToPreSeconds,
+    prTimeSec: bestTime ?? undefined,
+    wasSkipped: false,
+    cueTextPlayed: tracker.segment.name, // simplified — full cue text could be stored
+  });
+
+  _activeTracker = null;
+}
+
+// ─── Cue firing ──────────────────────────────────────────────────────────────
+
+function fireApproachCue(tracker: SegmentTracker): void {
+  const seg = tracker.segment;
+  const cue = getCueForSegment(seg.id, _goalMode);
+
+  if (cue) {
+    // Pick variant: for now, use moderate as default
+    const cueText = cue.moderate;
+    speak(cueText);
+
+    // Record in store
+    const store = useRideStore.getState();
+    store.setSegmentState(seg.id, 'approaching');
+    useRideStore.setState({ nextSegmentId: seg.id });
+  } else {
+    // Fallback: generic approach cue
+    const distStr = (seg.distanceM / 1000).toFixed(1);
+    const prStr = seg.bestTimeSec
+      ? `P R is ${formatTimeSec(seg.bestTimeSec)}.`
+      : '';
+    speak(`${seg.name} in 500 meters. ${distStr} K. ${prStr}`);
+  }
+}
+
+function fireSplitCue(
+  tracker: SegmentTracker,
+  pct: number,
+  _elapsedSec: number,
+  gapSec: number,
+): void {
+  if (tracker.segment.bestTimeSec == null) return; // no PR to compare against
+
+  const label = pct === 50 ? 'Halfway' : `${pct} percent`;
+  if (gapSec <= -3) {
+    speak(`${label}. ${Math.abs(gapSec)} seconds up. Hold.`);
+  } else if (gapSec >= 3) {
+    speak(`${label}. ${gapSec} seconds back. Push.`);
+  }
+  // Within ±3s: say nothing (too close to call with GPS noise)
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function formatTimeSec(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return m > 0 ? `${m}:${s.toString().padStart(2, '0')}` : `${s} seconds`;
+}
+
+function updateElapsedTime(): void {
+  // No-op for now — elapsed is computed from _startTimeMs in the wrapper
+  // This interval keeps the UI ticker alive
+}
+
+/** Get the ride start timestamp (ms) for elapsed time display. */
+export function getRideStartTime(): number {
+  return _startTimeMs;
+}
+
+/** Get total distance in km. */
+export function getRideDistanceKm(): number {
+  return _totalDistanceM / 1000;
+}
