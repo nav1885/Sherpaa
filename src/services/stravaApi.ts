@@ -55,6 +55,13 @@ async function stravaGet<T>(path: string, accessToken: string): Promise<T> {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
+  // Log rate limit headers on every response
+  const limit15 = res.headers.get('x-ratelimit-limit');
+  const usage15 = res.headers.get('x-ratelimit-usage');
+  if (limit15 || usage15) {
+    console.log(`[Strava API] ${path} — limit: ${limit15}, usage: ${usage15}`);
+  }
+
   if (res.status === 401) {
     throw new Error('STRAVA_TOKEN_EXPIRED');
   }
@@ -81,10 +88,20 @@ export async function getStarredSegments(accessToken: string): Promise<StravaSum
   const perPage = 200;
 
   while (true) {
-    const page_results = await stravaGet<StravaSummarySegment[]>(
-      `/segments/starred?page=${page}&per_page=${perPage}`,
-      accessToken,
-    );
+    let page_results: StravaSummarySegment[];
+    try {
+      page_results = await stravaGet<StravaSummarySegment[]>(
+        `/segments/starred?page=${page}&per_page=${perPage}`,
+        accessToken,
+      );
+    } catch (err) {
+      // If page > 1 and we hit rate limit, return what we have
+      if (page > 1) {
+        console.warn(`[stravaApi] pagination stopped at page ${page}:`, err);
+        break;
+      }
+      throw err; // Page 1 failure is a real error
+    }
     all.push(...page_results);
     if (page_results.length < perPage) break;
     page++;

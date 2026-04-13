@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../constants/colors';
 
@@ -18,6 +18,9 @@ interface Props {
   lastSyncedAt: string; // human-readable e.g. "2h ago"
   recentRides: RecentRide[];
   canStartRideDirectly: boolean; // true when segments cached + cues fresh
+  isSyncing: boolean;
+  isRefreshing: boolean;
+  onRefresh: () => void;
   onPlanRide: () => void;
   onStartRide: () => void;
   onRideTap: (rideId: string) => void;
@@ -29,6 +32,9 @@ export default function HomeScreen({
   lastSyncedAt,
   recentRides,
   canStartRideDirectly,
+  isSyncing,
+  isRefreshing,
+  onRefresh,
   onPlanRide,
   onStartRide,
   onRideTap,
@@ -37,15 +43,33 @@ export default function HomeScreen({
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.gold}
+            colors={[colors.gold]}
+          />
+        }
+      >
 
         {/* Header */}
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>{greeting}</Text>
-            <Text style={styles.syncStatus}>
-              {starredSegmentCount} starred segments · Last synced {lastSyncedAt}
-            </Text>
+            <View style={styles.syncRow}>
+              {isSyncing && (
+                <ActivityIndicator size="small" color={colors.gold} style={styles.syncSpinner} />
+              )}
+              <Text style={styles.syncStatus}>
+                {isSyncing
+                  ? 'Syncing segments from Strava...'
+                  : `${starredSegmentCount} starred segments · Last synced ${lastSyncedAt}`}
+              </Text>
+            </View>
           </View>
           {/* TODO: replace with actual profile image */}
           <View style={styles.avatar}>
@@ -142,6 +166,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 4,
+  },
+  syncRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  syncSpinner: {
+    marginRight: 6,
   },
   syncStatus: {
     fontSize: 13,

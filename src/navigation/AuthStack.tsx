@@ -152,6 +152,7 @@ function ConnectedWrapper() {
   } = route.params;
 
   const setAuth = useAuthStore((s) => s.setAuth);
+  const setLastSegmentSyncAt = useAuthStore((s) => s.setLastSegmentSyncAt);
   const [locationGranted, setLocationGranted] = useState(false);
 
   const [statusLines, setStatusLines] = useState<StatusLine[]>([
@@ -178,7 +179,11 @@ function ConnectedWrapper() {
           } else if (progress.total > 0) {
             patchStatus(1, { label: `Syncing… ${progress.done}/${progress.total}`, state: 'loading' });
           }
-        });
+        }, { listOnly: true });
+        // Mark sync timestamp so HomeTab won't re-sync immediately
+        if (!cancelled) {
+          setLastSegmentSyncAt(Math.floor(Date.now() / 1000));
+        }
       } catch {
         if (!cancelled) {
           patchStatus(1, { label: 'Segments will sync on first ride', state: 'warning' });

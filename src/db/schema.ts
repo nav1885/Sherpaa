@@ -30,6 +30,7 @@ export const segments = sqliteTable(
     polyline: text('polyline'), // encoded polyline string
     isStarred: integer('is_starred', { mode: 'boolean' }).notNull().default(true),
     lastFetchedAt: integer('last_fetched_at').notNull(),
+    detailFetchedAt: integer('detail_fetched_at'), // unix ts; null = detail never fetched
   },
   (t) => ({
     stravaIdIdx: index('idx_segments_strava_id').on(t.stravaSegmentId),

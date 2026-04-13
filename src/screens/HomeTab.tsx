@@ -9,10 +9,12 @@ import { useSegmentStore } from '../store/segmentStore';
 import { loadStarredSegments, getStarredSegmentCount } from '../services/segmentService';
 import { syncStarredSegments } from '../services/segmentSync';
 import { refreshStravaToken } from '../services/stravaAuth';
+import { TTL } from '../constants/ttl';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 
-const SYNC_STALE_SEC = 60 * 60; // re-sync segments if > 1 hour old
+// Module-level guard — persists across remounts, prevents duplicate syncs
+let _syncedThisSession = false;
 
 export default function HomeTab() {
   const navigation = useNavigation<Nav>();
@@ -30,6 +32,7 @@ export default function HomeTab() {
   const [segmentCount, setSegmentCount] = useState(() => getStarredSegmentCount());
   const [lastSynced, setLastSynced] = useState('—');
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     // Store already hydrated from App.tsx — update count
@@ -42,13 +45,17 @@ export default function HomeTab() {
   // Background sync: fetch from Strava if stale or empty
   useEffect(() => {
     if (!stravaAccessToken || !stravaRefreshToken || !jwt) return;
-    if (isSyncing) return;
 
     const nowSec = Math.floor(Date.now() / 1000);
-    const isStale = !lastSegmentSyncAt || (nowSec - lastSegmentSyncAt) > SYNC_STALE_SEC;
+    const isStale = !lastSegmentSyncAt || (nowSec - lastSegmentSyncAt) > TTL.SEGMENT_LIST_SEC;
     const isEmpty = getStarredSegmentCount() === 0;
 
+    // Skip if cache is fresh and populated
     if (!isStale && !isEmpty) return;
+
+    // Module-level guard: only auto-sync once per app session
+    if (_syncedThisSession && !isEmpty) return;
+    _syncedThisSession = true;
 
     let cancelled = false;
 
@@ -70,7 +77,7 @@ export default function HomeTab() {
       }
 
       try {
-        await syncStarredSegments(token);
+        await syncStarredSegments(token, undefined, { listOnly: true });
         if (cancelled) return;
         const segs = await loadStarredSegments();
         setStarredSegments(segs);
@@ -78,7 +85,8 @@ export default function HomeTab() {
         const ts = Math.floor(Date.now() / 1000);
         setLastSegmentSyncAt(ts);
         setLastSynced('Just now');
-      } catch {
+      } catch (err) {
+        console.error('[HomeTab] sync error:', err);
         if (!cancelled) setLastSynced('Sync failed');
       } finally {
         if (!cancelled) setIsSyncing(false);
@@ -90,6 +98,41 @@ export default function HomeTab() {
 
   const firstName = rider?.name.split(' ')[0] ?? 'Rider';
 
+  // Pull-to-refresh: bypasses TTL, force-syncs from Strava
+  const handleRefresh = async () => {
+    if (!stravaAccessToken || !stravaRefreshToken || !jwt) return;
+    setIsRefreshing(true);
+    setLastSynced('Syncing…');
+
+    let token = stravaAccessToken;
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (stravaTokenExpiresAt && stravaTokenExpiresAt < nowSec + 60) {
+      try {
+        const refreshed = await refreshStravaToken(stravaRefreshToken, jwt);
+        token = refreshed.accessToken;
+        setStravaToken(refreshed.accessToken, refreshed.expiresAt);
+      } catch {
+        setIsRefreshing(false);
+        setLastSynced('Sync failed');
+        return;
+      }
+    }
+
+    try {
+      await syncStarredSegments(token, undefined, { listOnly: true });
+      const segs = await loadStarredSegments();
+      setStarredSegments(segs);
+      setSegmentCount(segs.length);
+      const ts = Math.floor(Date.now() / 1000);
+      setLastSegmentSyncAt(ts);
+      setLastSynced('Just now');
+    } catch {
+      setLastSynced('Sync failed');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   return (
     <HomeScreen
       athleteName={firstName}
@@ -97,6 +140,9 @@ export default function HomeTab() {
       lastSyncedAt={lastSynced}
       recentRides={[]}
       canStartRideDirectly={segmentCount > 0}
+      isSyncing={isSyncing}
+      isRefreshing={isRefreshing}
+      onRefresh={handleRefresh}
       onPlanRide={() => navigation.navigate('Ride', { screen: 'RouteSetup' })}
       onStartRide={() => navigation.navigate('Ride', { screen: 'InRide' })}
       onRideTap={(_rideId) => navigation.navigate('Ride', { screen: 'PostRideSummary', params: { rideId: _rideId } })}

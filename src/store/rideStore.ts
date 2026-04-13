@@ -59,6 +59,9 @@ interface RideState {
   // Paywall gate
   coachedSegmentCount: number; // increments on each coached completion
 
+  // Cache invalidation signal
+  lastRideEndedAt: number | null; // timestamp ms; persists across resetRide
+
   // Actions
   startRide: (goalMode: 'pr' | 'training' | 'recovery', segmentIds: string[]) => void;
   updatePosition: (pos: GpsPosition) => void;
@@ -85,6 +88,7 @@ export const useRideStore = create<RideState>()((set, get) => ({
   nextSegmentId: null,
   audioActive: false,
   coachedSegmentCount: 0,
+  lastRideEndedAt: null,
 
   startRide: (goalMode, segmentIds) =>
     set({
@@ -180,7 +184,7 @@ export const useRideStore = create<RideState>()((set, get) => ({
 
   setAudioActive: (active) => set({ audioActive: active }),
 
-  endRide: () => set({ isRideActive: false }),
+  endRide: () => set({ isRideActive: false, lastRideEndedAt: Date.now() }),
 
   resetRide: () =>
     set({

@@ -16,14 +16,16 @@ export default function App() {
   useEffect(() => {
     runMigrations()
       .then(async () => {
+        console.log('[App] migrations done');
         const segs = await loadStarredSegments();
+        console.log('[App] segments loaded from DB:', segs.length);
         if (segs.length > 0) {
           useSegmentStore.getState().setStarredSegments(segs);
         }
         setDbReady(true);
       })
       .catch((err) => {
-        console.error('DB migration failed:', err);
+        console.error('[App] DB migration failed:', err);
         setDbReady(true);
       });
   }, []);

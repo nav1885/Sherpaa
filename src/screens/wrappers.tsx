@@ -3,12 +3,14 @@
  * Mock data is used in Phase 0. Each wrapper is replaced with real
  * data hookups in the corresponding phase (1–5).
  */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useSegmentStore } from '../store/segmentStore';
 import { useAuthStore } from '../store/authStore';
+import { useRideStore } from '../store/rideStore';
 import { loadStarredSegments } from '../services/segmentService';
+import { TTL } from '../constants/ttl';
 import { GoalMode } from '../components/RouteSetupScreen';
 import { StravaActivitySummary } from '../services/stravaApi';
 import { matchSegmentsToRoute, MatchedSegment } from '../services/routeMatching';
@@ -16,6 +18,7 @@ import { decodePolyline, LatLng } from '../utils/polyline';
 import { generateCuesForSegments } from '../services/cueGeneration';
 import { saveCues, getExistingCueSegmentIds } from '../services/cueService';
 import { getCachedActivities, refreshActivities } from '../services/activityService';
+import { syncSegmentDetails } from '../services/segmentSync';
 import { CueStatus } from '../components/CueGenerationScreen';
 
 import RouteSetupScreen from '../components/RouteSetupScreen';
@@ -42,12 +45,16 @@ export function RouteSetupScreenWrapper() {
 
   // Auth
   const stravaAccessToken = useAuthStore((s) => s.stravaAccessToken);
+  const lastActivityFetchAt = useAuthStore((s) => s.lastActivityFetchAt);
+  const setLastActivityFetchAt = useAuthStore((s) => s.setLastActivityFetchAt);
+  const lastRideEndedAt = useRideStore((s) => s.lastRideEndedAt);
 
   // Activity picker state — show cached immediately
   const [recentActivities, setRecentActivities] = useState<StravaActivitySummary[]>(
     () => getCachedActivities(),
   );
   const [isLoadingActivities, setIsLoadingActivities] = useState(false);
+  const [isRefreshingActivities, setIsRefreshingActivities] = useState(false);
   const [previewedActivity, setPreviewedActivity] = useState<StravaActivitySummary | null>(null);
   const [confirmedActivityId, setConfirmedActivityId] = useState<number | null>(null);
 
@@ -63,15 +70,48 @@ export function RouteSetupScreenWrapper() {
       .catch(() => {});
   }, []);
 
-  // Background refresh activities from Strava
+  // Staleness-gated activity refresh
   useEffect(() => {
     if (!stravaAccessToken) return;
+
+    const nowSec = Math.floor(Date.now() / 1000);
+    const isStale = !lastActivityFetchAt || (nowSec - lastActivityFetchAt) > TTL.ACTIVITY_SEC;
+    const justRode = lastRideEndedAt && (!lastActivityFetchAt || lastRideEndedAt / 1000 > lastActivityFetchAt);
+
+    if (!isStale && !justRode && recentActivities.length > 0) return;
+
     if (recentActivities.length === 0) setIsLoadingActivities(true);
     refreshActivities(stravaAccessToken)
-      .then(activities => setRecentActivities(activities))
-      .catch(() => {})
+      .then(activities => {
+        setRecentActivities(activities);
+        setLastActivityFetchAt(Math.floor(Date.now() / 1000));
+      })
+      .catch(err => console.error('[RouteSetup] activity refresh failed:', err))
       .finally(() => setIsLoadingActivities(false));
   }, [stravaAccessToken]);
+
+  // Compute staleness label for UI
+  const activitiesStalenessLabel = useMemo(() => {
+    if (!lastActivityFetchAt) return null;
+    const ageSec = Math.floor(Date.now() / 1000) - lastActivityFetchAt;
+    if (ageSec < 30 * 60) return null; // Hide if < 30 min old
+    if (ageSec < 3600) return `Updated ${Math.floor(ageSec / 60)}m ago`;
+    if (ageSec < 86400) return `Updated ${Math.floor(ageSec / 3600)}h ago`;
+    return `Updated ${Math.floor(ageSec / 86400)}d ago`;
+  }, [lastActivityFetchAt]);
+
+  // Pull-to-refresh handler — bypasses TTL
+  function handleRefreshActivities() {
+    if (!stravaAccessToken) return;
+    setIsRefreshingActivities(true);
+    refreshActivities(stravaAccessToken)
+      .then(activities => {
+        setRecentActivities(activities);
+        setLastActivityFetchAt(Math.floor(Date.now() / 1000));
+      })
+      .catch(err => console.error('[RouteSetup] manual refresh failed:', err))
+      .finally(() => setIsRefreshingActivities(false));
+  }
 
   function handleActivityPreview(activity: StravaActivitySummary) {
     setPreviewedActivity(activity);
@@ -79,6 +119,19 @@ export function RouteSetupScreenWrapper() {
     setRoutePolyline(decoded);
     const matched = matchSegmentsToRoute(activity.map.summary_polyline, starredSegments);
     setMatchedSegments(matched);
+
+    // Lazy-fetch polylines for matched segments that don't have them yet
+    if (stravaAccessToken) {
+      const needPolyline = matched
+        .filter(ms => !ms.segment.polyline)
+        .map(ms => Number(ms.segment.stravaSegmentId));
+      if (needPolyline.length > 0) {
+        syncSegmentDetails(stravaAccessToken, needPolyline).then(() => {
+          // Reload segments from DB to pick up new polylines
+          loadStarredSegments().then(segs => setStarredSegments(segs));
+        });
+      }
+    }
   }
 
   function handleConfirmActivity() {
@@ -119,6 +172,9 @@ export function RouteSetupScreenWrapper() {
       onActivityPreview={handleActivityPreview}
       onConfirmActivity={handleConfirmActivity}
       onClearActivity={handleClearActivity}
+      isRefreshingActivities={isRefreshingActivities}
+      onRefreshActivities={handleRefreshActivities}
+      activitiesStalenessLabel={activitiesStalenessLabel}
       selectedGoalMode={goalMode}
       onGoalModeSelect={setGoalMode}
       onGenerateCues={handleGenerateCues}

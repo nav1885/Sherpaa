@@ -132,4 +132,12 @@ export async function runMigrations(): Promise<void> {
       updated_at INTEGER NOT NULL
     )
   `);
+
+  // v2: Add detail_fetched_at to segments for staleness-gated caching
+  try {
+    await db.run(sql`ALTER TABLE segments ADD COLUMN detail_fetched_at INTEGER`);
+    console.log('[migrations] added detail_fetched_at column');
+  } catch (e) {
+    console.log('[migrations] detail_fetched_at already exists or error:', e);
+  }
 }

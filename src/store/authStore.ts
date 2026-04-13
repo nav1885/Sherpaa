@@ -23,6 +23,7 @@ interface AuthState {
   stravaRefreshToken: string | null;
   stravaTokenExpiresAt: number | null; // unix timestamp
   lastSegmentSyncAt: number | null; // unix timestamp
+  lastActivityFetchAt: number | null; // unix timestamp
 
   setAuth: (
     jwt: string,
@@ -32,6 +33,7 @@ interface AuthState {
   setSubscription: (tier: SubscriptionTier, expiresAt: string | null) => void;
   setStravaToken: (accessToken: string, expiresAt: number) => void;
   setLastSegmentSyncAt: (ts: number) => void;
+  setLastActivityFetchAt: (ts: number) => void;
   clearAuth: () => void;
 }
 
@@ -53,6 +55,7 @@ export const useAuthStore = create<AuthState>()(
       stravaRefreshToken: null,
       stravaTokenExpiresAt: null,
       lastSegmentSyncAt: null,
+      lastActivityFetchAt: null,
 
       setAuth: (jwt, rider, strava) =>
         set({
@@ -72,6 +75,8 @@ export const useAuthStore = create<AuthState>()(
 
       setLastSegmentSyncAt: (ts) => set({ lastSegmentSyncAt: ts }),
 
+      setLastActivityFetchAt: (ts) => set({ lastActivityFetchAt: ts }),
+
       clearAuth: () =>
         set({
           jwt: null,
@@ -83,6 +88,7 @@ export const useAuthStore = create<AuthState>()(
           stravaRefreshToken: null,
           stravaTokenExpiresAt: null,
           lastSegmentSyncAt: null,
+          lastActivityFetchAt: null,
         }),
     }),
     {

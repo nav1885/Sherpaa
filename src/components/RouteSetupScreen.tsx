@@ -5,6 +5,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  RefreshControl,
+  ActivityIndicator,
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,6 +32,11 @@ interface Props {
   onActivityPreview: (activity: StravaActivitySummary) => void;
   onConfirmActivity: () => void;
   onClearActivity: () => void;
+
+  // Activity refresh
+  isRefreshingActivities: boolean;
+  onRefreshActivities: () => void;
+  activitiesStalenessLabel: string | null;
 
   // Goal + navigation
   selectedGoalMode: GoalMode;
@@ -68,6 +75,9 @@ export default function RouteSetupScreen({
   onActivityPreview,
   onConfirmActivity,
   onClearActivity,
+  isRefreshingActivities,
+  onRefreshActivities,
+  activitiesStalenessLabel,
   selectedGoalMode,
   onGoalModeSelect,
   onGenerateCues,
@@ -120,21 +130,39 @@ export default function RouteSetupScreen({
           /* ── Ride selection ── */
           <>
             <View style={styles.panelHeader}>
-              <Text style={styles.panelTitle}>Select a ride</Text>
-              {previewedActivity && (
-                <Text style={styles.panelSub}>{previewedActivity.name}</Text>
-              )}
+              <View>
+                <Text style={styles.panelTitle}>Select a ride</Text>
+                {previewedActivity ? (
+                  <Text style={styles.panelSub}>{previewedActivity.name}</Text>
+                ) : activitiesStalenessLabel ? (
+                  <Text style={styles.stalenessLabel}>{activitiesStalenessLabel}</Text>
+                ) : null}
+              </View>
             </View>
 
-            {isLoadingActivities ? (
-              <Text style={styles.statusText}>Loading recent rides…</Text>
+            {isLoadingActivities && recentActivities.length === 0 ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.gold} />
+                <Text style={styles.statusText}>Loading recent rides…</Text>
+              </View>
             ) : recentActivities.length === 0 ? (
-              <Text style={styles.statusText}>No recent rides with routes found.</Text>
+              <View>
+                <Text style={styles.statusText}>No recent rides found.</Text>
+                <Text style={styles.statusText}>Pull down to refresh.</Text>
+              </View>
             ) : (
               <ScrollView
                 style={styles.list}
                 showsVerticalScrollIndicator={false}
                 nestedScrollEnabled
+                refreshControl={
+                  <RefreshControl
+                    refreshing={isRefreshingActivities}
+                    onRefresh={onRefreshActivities}
+                    tintColor={colors.gold}
+                    colors={[colors.gold]}
+                  />
+                }
               >
                 {recentActivities.map((activity, i) => {
                   const isSelected = previewedActivity?.id === activity.id;
@@ -198,9 +226,14 @@ export default function RouteSetupScreen({
                 matchedSegments.map(ms => {
                   const seg = ms.segment;
                   const hasHistory = seg.effortCount > 0;
+                  const missingPolyline = !seg.polyline && hasHistory;
                   return (
                     <View key={seg.id} style={styles.segRow}>
-                      <View style={[styles.segDot, !hasHistory && styles.segDotDim]} />
+                      {missingPolyline ? (
+                        <ActivityIndicator size="small" color={colors.gold} style={styles.segSpinner} />
+                      ) : (
+                        <View style={[styles.segDot, !hasHistory && styles.segDotDim]} />
+                      )}
                       <View style={styles.segInfo}>
                         <Text style={styles.segName}>{seg.name}</Text>
                         <Text style={styles.segMeta}>
@@ -332,6 +365,11 @@ const styles = StyleSheet.create({
     color: colors.gold,
     paddingTop: 2,
   },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    gap: 12,
+  },
   statusText: {
     fontSize: 14,
     color: colors.textMuted,
@@ -403,6 +441,17 @@ const styles = StyleSheet.create({
   },
   segDotDim: {
     backgroundColor: colors.textDim,
+  },
+  segSpinner: {
+    width: 12,
+    height: 12,
+    flexShrink: 0,
+  },
+  stalenessLabel: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+    color: colors.textMuted,
+    marginTop: 2,
   },
   segInfo: { flex: 1 },
   segName: { fontSize: 13, fontWeight: '600', color: colors.textPrimary },

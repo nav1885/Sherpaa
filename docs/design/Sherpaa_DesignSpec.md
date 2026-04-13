@@ -159,6 +159,8 @@ Current known violations fixed in this review:
 | Paywall dismiss | Light impact |
 | End Ride hold — 1s midpoint | Medium impact (progress feedback) |
 | End Ride hold — confirmed | Heavy impact |
+| [NEW] Pull-to-refresh release | Light impact |
+| [NEW] Sync failure | Error notification |
 
 ---
 
@@ -230,7 +232,13 @@ Current known violations fixed in this review:
 
 **Sync banner (pending)** — `goldDim` bg, `goldBorder` border, `gold` text 13px/500
 
+**Sync banner (failure)** [NEW] — `errorDim` bg, `errorBorder` border, `error` text 13px/500. Shows "Sync failed" for 4 seconds, then reverts to previous timestamp. Used on Home and Route Setup screens during pull-to-refresh failure.
+
 **Cached cues banner** — same as sync pending
+
+**Staleness label** [NEW] — 13px/500, `textMuted` (#555555). Displays "Updated Xh ago" below section headers when cached data is older than 30 minutes. Hidden during active refresh. `accessibilityLabel="Activities last updated X hours ago"`.
+
+**Segment loading spinner** [NEW] — 12px `ActivityIndicator` in `gold`, size "small". Replaces the gold 8px dot on segment rows when `segment.polyline === null AND segment.effortCount > 0`. Cross-fades to gold dot when polyline arrives (150ms). `accessibilityLabel="Loading segment map data"`.
 
 ### Audio Waveform
 
@@ -364,7 +372,7 @@ Final slide CTA becomes "Connect Strava".
 │                                         │
 │  ┌─────────────────────────────────┐    │
 │  │ ● Strava authentication    ✓   │    │
-│  │ ● Segments fetched (12)    ✓   │    │
+│  │ ● 12 segments found        ✓   │    │  ← [CHANGED] was "Segments fetched (12)"
 │  │ ● Profile loaded           ✓   │    │
 │  └─────────────────────────────────┘    │
 │     surface card, 10px radius          │
@@ -372,25 +380,28 @@ Final slide CTA becomes "Connect Strava".
 │  [location warning banner if denied]   │
 │                                         │
 │  ┌──────────── Let's Go ───────────┐    │
-│  │   btn-gold · 52px              │    │
-│  └────────────────────────────────┘    │
+│  │   btn-gold · 52px              │    │  ← [CHANGED] Enables after starred list
+│  └────────────────────────────────┘    │     fetch (~2-3s). Does NOT wait for
+│                                         │     segment detail fetches.
 │                                         │
 └─────────────────────────────────────────┘
 ```
 
 Status dot colors: success = `success`, loading = `surfaceDim`, error = `error`, warning = `gold`
 
+[NEW] **Post-onboarding background fetch:** After navigating from Connected to Home, the app begins a background lazy-fetch of segment details (polylines + elevation data). Fetches are throttled to 1 request per 2 seconds, sorted by `effort_count` descending (most-ridden segments first). No visible loading indicator on Home during this fetch. If the user navigates to Route Setup before the fetch completes, segments with missing polylines display the segment loading spinner (see Flow 2 State B).
+
 #### Screen: Home (Empty State)
 
 ```
 ┌─────────────────────────────────────────┐
 │ [safe area top]                         │
-│                                         │
-│  Good morning, Jane.       [J] avatar   │
-│  (20px/600, textPrimary)   (36×36, gold │
-│                              bg)        │
+│                                         │  ← [NEW] RefreshControl on ScrollView
+│  Good morning, Jane.       [J] avatar   │     tintColor: gold (#F5C842)
+│  (20px/600, textPrimary)   (36×36, gold │     Pull triggers force segment sync
+│                              bg)        │     + activity refresh (bypasses TTL)
 │  12 starred segments · Last synced 2h ago
-│  (13px, textMuted)                      │
+│  (13px, textMuted)                      │  ← [CHANGED] Sync label states below
 │                                         │
 │  ┌───────────────────────────────────┐  │
 │  │ 🚴 Plan Ride                   › │  │
@@ -418,6 +429,17 @@ Status dot colors: success = `success`, loading = `surfaceDim`, error = `error`,
 Same as empty but rides list shows last 3 rides. Ride card: title + date row, then stats row with distance, segment count, and PR tag if applicable. PR tag uses gold accent system.
 
 Quick Start card (when cues cached): `goldDim` bg + `goldBorder` border + "▶ Start Ride Now" in `gold` 16px/700.
+
+[NEW] **Home screen sync behavior:**
+
+- **RefreshControl:** Added to the main ScrollView. `tintColor: gold` (#F5C842). Pull-to-refresh forces both segment sync and activity refresh, bypassing all TTL checks.
+- **Sync label transitions:** The "Last synced Xh ago" label (13px, `textMuted`) transitions through three states:
+  - Idle: "Last synced Xh ago" — relative timestamp, `textMuted` (#555555)
+  - Active: "Syncing..." — replaces timestamp during pull-to-refresh or background auto-sync, `textMuted` (#555555)
+  - Success: "Just now" — displays on successful sync, `textMuted` (#555555). Reverts to relative timestamp as time passes.
+- **Network failure:** On sync failure, label shows "Sync failed" in `error` (#E5484D) for 4 seconds, then reverts to previous timestamp (e.g., "Last synced 3h ago").
+- **Background auto-sync:** On mount, if `lastStarredListFetchAt` is older than 24 hours, a silent background sync fires. No spinner shown — the sync label transitions to "Syncing..." and back. No layout changes.
+- **No layout changes** to any existing Home screen elements.
 
 **Transitions — Flow 1:**
 - Welcome → Carousel: slide left, 300ms spring (tension: 100, friction: 20)
@@ -450,13 +472,16 @@ Split 50/50 vertical layout — map on top, panel on bottom. Panel has two state
 │                                         │
 │  Select a ride                          │  ← panel half (flex: 1)
 │  (17px/700, textPrimary)                │
-│  [previewed ride name] (12px, gold)     │
+│  Updated 2h ago                         │  ← [NEW] staleness label
+│  (13px/500, textMuted #555555)          │     Visible when cache >30min old
+│                                         │     Hidden during active refresh
+│  [previewed ride name] (12px, gold)     │     Hidden when previewing a ride
 │                                         │
-│  ┌─────────────────────────────────┐    │
-│  │ Morning Climb to Grizzly    ›   │    │  ← row (selected)
-│  │ Apr 9 · 42.1 km                 │    │    borderLeftWidth: 3, gold
-│  └─────────────────────────────────┘    │    bg: rgba(245,200,66,0.06)
-│  ┌─────────────────────────────────┐    │
+│  ┌─────────────────────────────────┐    │  ← [NEW] RefreshControl on this
+│  │ Morning Climb to Grizzly    ›   │    │     ScrollView. Gold spinner.
+│  │ Apr 9 · 42.1 km                 │    │     Bypasses 4h activity TTL.
+│  └─────────────────────────────────┘    │    borderLeftWidth: 3, gold (selected)
+│  ┌─────────────────────────────────┐    │    bg: rgba(245,200,66,0.06)
 │  │ Paradise Loop recovery      ›   │    │  ← row (default)
 │  │ Apr 7 · 28.4 km                 │    │
 │  └─────────────────────────────────┘    │
@@ -474,18 +499,29 @@ Split 50/50 vertical layout — map on top, panel on bottom. Panel has two state
 ```
 ┌─────────────────────────────────────────┐
 │  [pills overlay — same as State A]      │
-│  [Leaflet map — gold polyline + gold    │
-│   circle markers at each matched        │
-│   segment start, radius 80m]            │
+│  [Leaflet map — gold polyline + gold    │  ← [CHANGED] Progressive map rendering:
+│   circle markers at each matched        │     Gold circle markers at segment
+│   segment start, radius 80m]            │     start_latlng render immediately
+│                                         │     (from cached coords). Polyline
+│                                         │     overlays render ONLY for segments
+│                                         │     with cached polylines. Missing
+│                                         │     polylines fade in via
+│                                         │     injectJavaScript (200ms CSS
+│                                         │     transition) as they are fetched.
+│                                         │     Map does NOT re-fitBounds.
 ├─────────────────────────────────────────┤
 │  4 segments on route      ← Change ride │
 │  (17px/700)               (13px, gold)  │
 │                                         │
-│  ● Hawk Hill            2.4 km · 4:12  │
+│  ● Hawk Hill            2.4 km · 4:12  │  ← gold 8px dot (has polyline + history)
 │    best time or "no history"    1.2 km │  ← distance-along-route
-│  ● Paradise Loop        ...            │
-│  ○ Twin Peaks Blvd      (dimmed — no   │
-│                          history)      │
+│  ◌ Paradise Loop        ...            │  ← [CHANGED] 12px ActivityIndicator
+│                                         │     (gold, "small") when polyline is
+│                                         │     NULL AND effortCount > 0.
+│                                         │     Cross-fades to gold dot when
+│                                         │     polyline arrives (150ms).
+│  ○ Twin Peaks Blvd      (dimmed — no   │  ← dim dot: no history. Stays dim
+│                          history)      │     regardless of polyline status.
 │  [ScrollView — all matched segments]    │
 │                                         │
 │  GOAL FOR THIS RIDE                     │
@@ -504,9 +540,19 @@ Split 50/50 vertical layout — map on top, panel on bottom. Panel has two state
 - Root: `bg` background. Map half and panel half each `flex: 1`, separated by 1px `borderStrong` divider.
 - Pills overlay sits over the map, padded by `insets.top + 8px`. Pill: 32px height, `borderRadius: 999`, `rgba(28,28,30,0.85)` bg, `borderStrong` border. Active pill: `gold` bg, `textOnGold` text 700-weight. No back button — user navigates via tab bar / system back.
 - Ride row: 13px vertical padding, 1px bottom `border` divider, chevron (›) in `textDim`. Selected row: `borderLeftWidth: 3` in `gold`, `paddingLeft: 10` to compensate, bg `rgba(245,200,66,0.06)`, name color → `gold`. No check mark. The full row height picks up the gold left edge (must use `borderLeftWidth` on the row, not an absolute-positioned child — the latter does not span full row height reliably on Android).
-- Segment row: 10px vertical padding, gold 8px dot for segments with history, `textDim` dot for no-history.
+- Segment row: 10px vertical padding, gold 8px dot for segments with history, `textDim` dot for no-history. [CHANGED] When `segment.polyline === null AND segment.effortCount > 0`: gold 8px dot is replaced with a 12px `ActivityIndicator` (gold, size "small"). Segments with no history keep the dim dot regardless of polyline status. When polyline arrives: spinner cross-fades to gold dot over 150ms.
 - Goal chips: height 36px, `borderRadius: 10px`. Selected: `gold` bg, `textOnGold` text. Unselected: `surface` bg, `border` border.
 - Primary CTA: 52px height, `borderRadius: 999` (pill), `gold` bg, `textOnGold` 16px/700. Disabled state: `opacity: 0.35`.
+
+[NEW] **Route Setup — caching behavior:**
+
+- **Activity list staleness label:** Below "Select a ride" header, displays "Updated Xh ago" in 13px/500 `textMuted` (#555555). Visible when activity cache is older than 30 minutes. Hidden during active refresh or when the user is previewing a ride (gold preview label takes precedence).
+- **Activity list RefreshControl:** Gold spinner on the activity ScrollView. Pull-to-refresh bypasses the 4-hour activity TTL and forces a fresh fetch from Strava.
+- **Activity list failure:** On refresh failure, staleness label shows "Sync failed" in `error` (#E5484D) for 4 seconds, then reverts to previous timestamp.
+- **Activity empty state:** [CHANGED] "No recent rides with routes found." gains a second line: "Pull down to refresh." — shown when cache is empty AND network has failed.
+- **Map progressive rendering:** Gold circle markers at segment `start_latlng` render immediately from cached coordinates. Polyline overlays render only for segments with cached polylines. As missing polylines are fetched in the background, overlays fade in via `injectJavaScript` with a 200ms CSS transition. The map does NOT call `fitBounds` again after initial render.
+- **Rate limit during polyline fetch:** If Strava rate-limits during background polyline fetches, the spinner persists silently on affected segment rows. No error is shown to the user. Remaining fetches resolve on next app launch.
+- **Generate Coaching Cues button:** Stays enabled regardless of polyline fetch status. Cue generation does not require polylines.
 
 **Tech note — map rendering:**
 
@@ -985,6 +1031,10 @@ Pro column header in `gold`. Elite column header in `textPrimary`. Save badge: `
 | Spinner (cue generation) | Rotation | Continuous, 800ms/cycle | Linear |
 | OAuth → Connected | Fade | 200ms | Ease-in-out |
 | Welcome → Carousel | Slide left + fade | 300ms | Spring |
+| [NEW] Segment spinner → dot | Cross-fade (opacity) | 150ms | Ease-in-out |
+| [NEW] Map polyline fade-in | CSS opacity transition | 200ms | Ease-in-out |
+| [NEW] Sync failed → timestamp | Text swap | 4000ms hold then instant | — |
+| [NEW] RefreshControl spinner | Platform-native pull | Platform-native | Spring |
 
 **Motion principles:**
 - Springs feel physical — use spring curves wherever possible
@@ -1026,6 +1076,13 @@ Pro column header in `gold`. Elite column header in `textPrimary`. Save badge: `
 - 2-second hold threshold
 - Haptic at 1-second midpoint (medium impact) and at completion (heavy impact)
 - Visual: border pulses gold during hold — subtle progress indication without distraction
+
+[NEW] **Caching-related accessibility:**
+- Staleness label (Route Setup): `accessibilityLabel="Activities last updated X hours ago"`
+- Segment loading spinner: `accessibilityLabel="Loading segment map data"`
+- Segment row with spinner: full row `accessibilityLabel` includes loading state, e.g., "Paradise Loop, 3.1 kilometers, loading map data"
+- RefreshControl on Home and Route Setup: uses platform-native VoiceOver (iOS) and TalkBack (Android) support — no custom `accessibilityLabel` needed
+- Sync failure label: announce "Sync failed" via `accessibilityLiveRegion="polite"` on Android / `UIAccessibility.post(.announcement)` on iOS
 
 ---
 
