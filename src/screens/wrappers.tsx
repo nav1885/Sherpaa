@@ -21,6 +21,7 @@ import { getCachedActivities, refreshActivities } from '../services/activityServ
 import { syncSegmentDetails } from '../services/segmentSync';
 import { startRideEngine, stopRideEngine, getRideStartTime } from '../services/rideEngine';
 import { saveRide, generateDebrief } from '../services/rideService';
+import { loadRideDetail } from '../services/rideHistoryService';
 import { speak } from '../services/ttsService';
 import { CueStatus } from '../components/CueGenerationScreen';
 
@@ -428,6 +429,7 @@ export function SegmentResultScreenWrapper() {
 
 export function PostRideSummaryScreenWrapper() {
   const navigation = useNavigation<RideNav>();
+  const route = useRoute<RouteProp<RideStackParamList, 'PostRideSummary'>>();
   const rider = useAuthStore((s) => s.rider);
   const completedSegments = useRideStore((s) => s.completedSegments);
   const rideStartedAt = useRideStore((s) => s.rideStartedAt);
@@ -437,13 +439,32 @@ export function PostRideSummaryScreenWrapper() {
   const gpxTrackPoints = useRideStore((s) => s.gpxTrackPoints);
   const starredSegments = useSegmentStore((s) => s.starredSegments);
 
-  const endedAt = useRideStore((s) => s.lastRideEndedAt) ?? Date.now();
-  const durationSec = rideStartedAt ? Math.floor((endedAt - rideStartedAt) / 1000) : 0;
+  // History mode: ride was navigated to from History list — load from SQLite.
+  // Detected when rideStore is empty (no live ride data) but a rideId was passed.
+  const isHistoryMode = completedSegments.length === 0 && !rideStartedAt;
+  const persisted = useMemo(
+    () => (isHistoryMode ? loadRideDetail(route.params.rideId) : null),
+    [isHistoryMode, route.params.rideId],
+  );
 
-  // Save ride to DB on mount (once)
+  const liveEndedAt = useRideStore((s) => s.lastRideEndedAt);
+  const endedAt = isHistoryMode
+    ? (persisted?.ride.endedAt ?? 0) * 1000
+    : (liveEndedAt ?? Date.now());
+  const effectiveStartedAt = isHistoryMode
+    ? (persisted?.ride.startedAt ?? 0) * 1000
+    : (rideStartedAt ?? Date.now());
+  const durationSec = isHistoryMode
+    ? (persisted ? persisted.ride.endedAt - persisted.ride.startedAt : 0)
+    : (rideStartedAt ? Math.floor((endedAt - rideStartedAt) / 1000) : 0);
+  const effectiveDistanceKm = isHistoryMode
+    ? (persisted ? persisted.ride.distanceM / 1000 : 0)
+    : distanceKm;
+
+  // Save ride to DB on mount (once) — skip in history mode (already persisted)
   const savedRef = useRef(false);
   useEffect(() => {
-    if (savedRef.current || !rider) return;
+    if (isHistoryMode || savedRef.current || !rider) return;
     savedRef.current = true;
     try {
       saveRide({
@@ -464,6 +485,18 @@ export function PostRideSummaryScreenWrapper() {
 
   // Build segment results — include skipped segments
   const segmentResults = useMemo(() => {
+    if (isHistoryMode && persisted) {
+      return persisted.efforts.map(e => ({
+        id: e.segmentId,
+        name: e.segmentName,
+        timeSec: e.timeSec,
+        isNewPR: e.isNewPR,
+        gapToPreSeconds: e.gapToPreSeconds,
+        prTimeSec: undefined,
+        wasSkipped: false,
+        cueTextPlayed: e.cueTextPlayed ?? undefined,
+      }));
+    }
     const completedIds = new Set(completedSegments.map(c => c.segmentId));
     const results: Array<{
       id: string; name: string; timeSec: number; isNewPR: boolean;
@@ -502,46 +535,61 @@ export function PostRideSummaryScreenWrapper() {
     return results;
   }, [completedSegments, routeSegmentIds, starredSegments]);
 
-  // Generate debrief text
-  const debriefText = useMemo(
-    () => generateDebrief(completedSegments, durationSec, distanceKm),
-    [completedSegments, durationSec, distanceKm],
-  );
+  // Generate debrief text — use persisted text in history mode if present
+  const debriefText = useMemo(() => {
+    if (isHistoryMode) {
+      if (persisted?.ride.debriefText) return persisted.ride.debriefText;
+      const fakeCompleted = (persisted?.efforts ?? []).map(e => ({
+        segmentId: e.segmentId,
+        name: e.segmentName,
+        timeSec: e.timeSec,
+        isNewPR: e.isNewPR,
+        gapToPreSeconds: e.gapToPreSeconds,
+        prTimeSec: undefined,
+        wasSkipped: false,
+      }));
+      return generateDebrief(fakeCompleted, durationSec, effectiveDistanceKm);
+    }
+    return generateDebrief(completedSegments, durationSec, distanceKm);
+  }, [isHistoryMode, persisted, completedSegments, durationSec, distanceKm, effectiveDistanceKm]);
 
-  // Speak debrief on mount
+  // Speak debrief on mount — only for live post-ride, not history viewing
   const spokenRef = useRef(false);
   useEffect(() => {
-    if (spokenRef.current || !debriefText) return;
+    if (isHistoryMode || spokenRef.current || !debriefText) return;
     spokenRef.current = true;
     speak(debriefText);
-  }, [debriefText]);
+  }, [debriefText, isHistoryMode]);
 
   const rideName = useMemo(() => {
+    if (isHistoryMode && persisted) return persisted.ride.name;
     const hour = new Date(rideStartedAt ?? Date.now()).getHours();
     if (hour < 12) return 'Morning Ride';
     if (hour < 17) return 'Afternoon Ride';
     return 'Evening Ride';
-  }, [rideStartedAt]);
+  }, [rideStartedAt, isHistoryMode, persisted]);
 
   const rideDate = useMemo(() => {
-    const d = new Date(rideStartedAt ?? Date.now());
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }, [rideStartedAt]);
+    const d = new Date(effectiveStartedAt);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }, [effectiveStartedAt]);
 
   function handleDone() {
-    useRideStore.getState().resetRide();
+    if (!isHistoryMode) useRideStore.getState().resetRide();
     navigation.getParent()?.navigate('Main');
   }
+
+  const stravaSynced = isHistoryMode ? (persisted?.ride.stravaSynced ?? false) : false;
 
   return (
     <PostRideSummaryScreen
       rideName={rideName}
       rideDate={rideDate}
-      distanceKm={distanceKm}
+      distanceKm={effectiveDistanceKm}
       durationSec={durationSec}
-      elevationM={0}
+      elevationM={isHistoryMode ? (persisted?.ride.elevationM ?? 0) : 0}
       segmentResults={segmentResults}
-      stravaSynced={false}
+      stravaSynced={stravaSynced}
       debriefText={debriefText}
       onListenDebrief={() => speak(debriefText)}
       onShare={() => {}}
