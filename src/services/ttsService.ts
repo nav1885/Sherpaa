@@ -3,6 +3,7 @@
  * Speaks one utterance at a time; queued utterances play in order.
  */
 import * as Speech from 'expo-speech';
+import { useSettingsStore } from '../store/settingsStore';
 
 const _queue: string[] = [];
 let _speaking = false;
@@ -11,11 +12,12 @@ async function _processQueue(): Promise<void> {
   if (_speaking || _queue.length === 0) return;
   _speaking = true;
   const text = _queue.shift()!;
+  const { ttsRate } = useSettingsStore.getState();
 
   return new Promise<void>((resolve) => {
     Speech.speak(text, {
       language: 'en-US',
-      rate: 0.95,
+      rate: ttsRate,
       onDone: () => {
         _speaking = false;
         resolve();
@@ -36,6 +38,7 @@ async function _processQueue(): Promise<void> {
 
 /** Queue a text utterance. Plays immediately if nothing else is speaking. */
 export function speak(text: string): void {
+  if (!useSettingsStore.getState().ttsEnabled) return;
   _queue.push(text);
   _processQueue();
 }
