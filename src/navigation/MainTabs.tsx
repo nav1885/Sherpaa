@@ -6,8 +6,9 @@ import { MainTabParamList } from './types';
 import { colors } from '../constants/colors';
 
 import HomeTab from '../screens/HomeTab';
-// Placeholder screens for Phase 6
-import { SegmentsScreenPlaceholder, HistoryScreenPlaceholder, SettingsScreenPlaceholder } from '../screens/placeholders';
+import SegmentsScreen from '../screens/SegmentsScreen';
+import HistoryScreen from '../screens/HistoryScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -53,9 +54,9 @@ export default function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeTab} />
-      <Tab.Screen name="Segments" component={SegmentsScreenPlaceholder} />
-      <Tab.Screen name="History" component={HistoryScreenPlaceholder} />
-      <Tab.Screen name="Settings" component={SettingsScreenPlaceholder} />
+      <Tab.Screen name="Segments" component={SegmentsScreen} />
+      <Tab.Screen name="History" component={HistoryScreen} />
+      <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
   );
 }
