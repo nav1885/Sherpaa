@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 454 454" width="454" height="454">
+  <title>Design 2 — Editorial Stack (Ice theme)</title>
+  <defs>
+    <clipPath id="watch2"><circle cx="227" cy="227" r="227"/></clipPath>
+  </defs>
+  <g clip-path="url(#watch2)" font-family="Inter, 'Helvetica Neue', Arial, sans-serif">
+    <rect width="454" height="454" fill="#000000"/>
+
+    <!-- Date strip (top) -->
+    <text x="227" y="78" text-anchor="middle" font-size="15" font-weight="500" fill="#7DD3FC" letter-spacing="6">THU · 28 MAY · WK 22</text>
+
+    <!-- Hour (bold display) -->
+    <text x="227" y="220" text-anchor="middle" font-size="160" font-weight="900" fill="#ffffff" letter-spacing="-6">10</text>
+
+    <!-- Divider line with accent dot (functions as colon) -->
+    <line x1="115" y1="238" x2="220" y2="238" stroke="#1d1d1d" stroke-width="1"/>
+    <circle cx="227" cy="238" r="3" fill="#7DD3FC"/>
+    <line x1="234" y1="238" x2="339" y2="238" stroke="#1d1d1d" stroke-width="1"/>
+
+    <!-- Minute (thin contrast weight) -->
+    <text x="227" y="355" text-anchor="middle" font-size="160" font-weight="200" fill="#ffffff" letter-spacing="-6">42</text>
+
+    <!-- Bottom row complications -->
+    <g font-size="10" font-weight="500" fill="#555" letter-spacing="2" text-anchor="middle">
+      <text x="122" y="388">HR</text>
+      <text x="195" y="388">BODY</text>
+      <text x="267" y="388">STEPS</text>
+      <text x="334" y="388">BAT</text>
+    </g>
+    <g font-size="22" font-weight="700" fill="#ffffff" text-anchor="middle">
+      <text x="122" y="413">62</text>
+      <text x="195" y="413" fill="#7DD3FC">78</text>
+      <text x="267" y="413">7.2K</text>
+      <text x="334" y="413">84%</text>
+    </g>
+  </g>
+  <circle cx="227" cy="227" r="226" fill="none" stroke="#2a2a2a" stroke-width="2"/>
+</svg>
