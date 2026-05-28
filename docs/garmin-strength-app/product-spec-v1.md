@@ -292,8 +292,14 @@ phone connection needed at workout time):
 ## 10. Connect IQ specifics
 
 - **App type:** Watch App with custom activity profile
-- **Target devices:** fenix 8 family first; fenix 7 family as fast-follow
-- **CIQ SDK target:** 5.x minimum (for fenix 8 features and sensor API)
+- **Target devices (launch):**
+  - fenix 8 (47mm AMOLED 416×416, 51mm AMOLED 454×454, Solar MIP 280×280)
+  - fenix 7 / 7S / 7X (MIP: 260×260, 240×240, 280×280)
+  - fenix 7 Pro AMOLED (47mm 416×416, 51mm 454×454)
+  - Forerunner 965 (AMOLED 454×454)
+  - Forerunner 955 (MIP 260×260)
+- **CIQ SDK target:** 4.0 minimum (covers all listed devices); use
+  4.2+ APIs guarded by `:typecheck` or capability flags where helpful
 - **Language:** Monkey C
 - **Key APIs:**
   - `WatchUi.View` hierarchy for screen flow
@@ -302,8 +308,18 @@ phone connection needed at workout time):
   - `Attention.vibrate` for haptic cues
   - `Application.Storage` for persistence
   - `Timer.Timer` for rest countdown
-- **Memory budget on fenix 8:** ~256 KB graphic pool — plenty of
-  headroom for this app's minimal graphics
+- **Memory budgets to design against:**
+  - Lowest common denominator: fenix 7S app graphic pool ≈ 96 KB
+  - fenix 8 / FR965 AMOLED: ~256 KB — plenty of headroom
+  - **Implication:** avoid bitmap fonts where possible, use vector
+    drawing for the rep counter, no full-screen gradients on MIP variants
+- **Display handling:**
+  - All targets are round 1:1, so use **percentage-based layout** in
+    code rather than per-device XML layouts
+  - Maintain two color palettes: AMOLED (rich black + accent) and MIP
+    (high-contrast white-on-black, no gradients)
+  - Detect via `System.getDeviceSettings().screenShape` and
+    capability flags at startup, select palette once
 
 ## 11. Project structure
 
@@ -362,23 +378,31 @@ overhead press, pull-up, bench press.
 
 **Exit criteria:** Complete a real 60-minute workout end-to-end on the watch.
 
-### Phase 2 — Polish (2 weeks)
+### Phase 2 — Polish + multi-device (3–4 weeks)
 - Full 40-exercise library
 - FIT activity output
 - Settings menu via CIQ phone app
 - Summary screen with volume math
 - Haptic tuning across rep / rest-warning / rest-end
 - AMOLED burn-in mitigation if always-on during set is enabled
+- **Multi-device pass:**
+  - Verify layout at 240 / 260 / 280 / 416 / 454 px in simulator
+  - MIP color palette + remove gradients on MIP variants
+  - Memory profiling against fenix 7S budget
+  - Test FIT output on each device family
 
-**Exit criteria:** Personal daily-use for 2 weeks without paper backup.
+**Exit criteria:** Personal daily-use for 2 weeks without paper backup,
+plus clean simulator runs across all 5 resolutions.
 
 ### Phase 3 — Launch prep (2 weeks)
-- 5 beta testers from r/Garmin or local gym
-- App store screenshots (5 per device family)
+- 5 beta testers from r/Garmin or local gym (ideally mixed devices)
+- App store screenshots (5 per device family — 5 families = 25 images)
 - Listing copy + demo video
-- Pricing: launch at $5.99 with 7-day free trial
+- Pricing: launch at $5.99 with 7-day free trial (tentative)
 
-**Total realistic timeline:** 8 weeks of focused part-time work.
+**Total realistic timeline:** 10–11 weeks of focused part-time work
+(was 8 with fenix 8 only; broader device support adds ~2–3 weeks
+mostly in Phase 2).
 
 ## 13. Risks & mitigations
 
@@ -389,7 +413,9 @@ overhead press, pull-up, bench press.
 | Set-end auto-detect false-triggers mid-set | Medium | 5s timeout + 5s warning countdown. Tunable in settings. |
 | User forgets to start workout | High | Watch face complication "start workout" shortcut as v1.1. |
 | Garmin native strength gets dramatically better | Low | Even then, the per-exercise tuning is durable differentiation. |
-| Memory exhaustion on older fenix | Low | Target fenix 8 first. Older fenix gets a stripped library if at all. |
+| Memory exhaustion on fenix 7S (smallest pool) | Medium | Vector-draw the rep counter, lean exercise library data, avoid bitmap caches. Profile in Phase 2 against the 96 KB budget. |
+| Layout breaks across 240→454 px range | Medium | Percentage-based positioning in code, simulator pass on all 5 resolutions before any device-specific work. |
+| MIP vs AMOLED visual disparity | Medium | Two palettes selected at startup; gradients gated behind AMOLED capability check. |
 
 ## 14. Success criteria
 
@@ -424,10 +450,11 @@ overhead press, pull-up, bench press.
 
 ---
 
-## Decision needed before building
+## Decisions locked
 
-1. **Confirm fenix 8 is launch target** (or do you want fenix 7 day-one?)
-2. **Confirm pricing intent:** $5.99 one-time with 7-day trial vs $3.99
-   one-time vs $0.99 + $2.99 IAP for "Pro" features
-3. **Confirm scope:** does the above v1 scope feel right, or should
-   anything from v1.1 move into v1?
+1. **Launch devices:** fenix 8 family + fenix 7 family + Forerunner 965
+   + Forerunner 955. Broad reach prioritized over fastest ship.
+2. **Pricing:** $5.99 + 7-day free trial assumed for planning purposes;
+   final price revisited before store submission.
+3. **Scope:** v1 as written. No additions. RPE, plate calc, and
+   programming all deferred to v1.1+.
