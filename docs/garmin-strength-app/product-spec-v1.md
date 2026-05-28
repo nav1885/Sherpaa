@@ -398,7 +398,7 @@ plus clean simulator runs across all 5 resolutions.
 - 5 beta testers from r/Garmin or local gym (ideally mixed devices)
 - App store screenshots (5 per device family — 5 families = 25 images)
 - Listing copy + demo video
-- Pricing: launch at $5.99 with 7-day free trial (tentative)
+- Pricing: launch at $3.99 with 7-day free trial (tentative)
 
 **Total realistic timeline:** 10–11 weeks of focused part-time work
 (was 8 with fenix 8 only; broader device support adds ~2–3 weeks
@@ -426,7 +426,7 @@ mostly in Phase 2).
 ### Product (post-launch)
 - **3-month:** 500 paid installs, ≥4.3★ average, ≥20 reviews
 - **6-month:** 2,000 paid installs, top 10 in "Health & Fitness" → "Strength" category
-- **Revenue target Y1:** $6,000 net after Garmin's 30% cut (≈1,400 sales at $5.99)
+- **Revenue target Y1:** $6,000 net after Garmin's 30% cut (≈2,150 sales at $3.99)
 
 ## 15. Future roadmap
 
@@ -454,7 +454,8 @@ mostly in Phase 2).
 
 1. **Launch devices:** fenix 8 family + fenix 7 family + Forerunner 965
    + Forerunner 955. Broad reach prioritized over fastest ship.
-2. **Pricing:** $5.99 + 7-day free trial assumed for planning purposes;
-   final price revisited before store submission.
+2. **Pricing:** $3.99 + 7-day free trial. Lower-friction price point
+   trades per-unit revenue for install volume; needs ~2,150 sales to
+   hit the $6K Y1 net target.
 3. **Scope:** v1 as written. No additions. RPE, plate calc, and
    programming all deferred to v1.1+.
